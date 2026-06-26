@@ -504,6 +504,118 @@ enum UserRoleStatus {
   @@map("user_role_status")
 }
 
+/// The type of audit operation performed
+enum AuditOperation {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  LOGIN
+  LOGOUT
+  IMPORT
+  EXPORT
+  PRINT
+  DOWNLOAD
+  UPLOAD
+  ASSIGN
+  REVOKE
+  APPROVE
+  REJECT
+  CANCEL
+  RESTORE
+  ARCHIVE
+  SYSTEM
+
+  @@map("audit_operation")
+}
+
+/// Severity level of an audit log entry
+enum AuditSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+  SECURITY
+
+  @@map("audit_severity")
+}
+
+/// Category of user activity
+enum ActivityType {
+  LOGIN
+  LOGOUT
+  PROFILE_UPDATE
+  PASSWORD_CHANGE
+  SETTINGS_CHANGE
+  ROLE_CHANGE
+  PERMISSION_CHANGE
+  DATA_CREATE
+  DATA_UPDATE
+  DATA_DELETE
+  DATA_IMPORT
+  DATA_EXPORT
+  REPORT_GENERATED
+  APPROVAL
+  REJECTION
+  NOTE_ADDED
+  STATUS_CHANGE
+  ASSIGNMENT
+  TRANSFER
+  OTHER
+
+  @@map("activity_type")
+}
+
+/// Status of an activity entry
+enum ActivityStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  SKIPPED
+
+  @@map("activity_status")
+}
+
+/// Broad category of the uploaded file
+enum FileCategory {
+  COMPANY_LOGO
+  USER_PROFILE
+  PRODUCT_IMAGE
+  KYC_DOCUMENT
+  PURCHASE_INVOICE
+  SALES_INVOICE
+  RETURN_DOCUMENT
+  PAYMENT_RECEIPT
+  AGREEMENT
+  ATTACHMENT
+  REPORT
+  OTHER
+
+  @@map("file_category")
+}
+
+/// Supported cloud storage providers
+enum StorageProvider {
+  AWS_S3
+  AZURE_BLOB
+  MINIO
+  LOCAL
+  GCP_STORAGE
+
+  @@map("storage_provider")
+}
+
+/// Result of virus scanning on an uploaded file
+enum VirusScanStatus {
+  NOT_SCANNED
+  CLEAN
+  INFECTED
+  SCANNING_FAILED
+  QUARANTINED
+
+  @@map("virus_scan_status")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -632,8 +744,12 @@ model Company {
   version Int @default(1) @map("version")
 
   // ─── Relations ─────────────────────────────────
-  companyUsers CompanyUser[]
-  roles        Role[]
+  companyUsers    CompanyUser[]
+  roles           Role[]
+  companySettings CompanySettings?
+  auditLogs       AuditLog[]
+  activityLogs    ActivityLog[]
+  fileAttachments FileAttachment[]
   // Warehouses     Warehouse[]
   // Products       Product[]
   // Retailers      Retailer[]
@@ -854,13 +970,14 @@ model User {
   version Int @default(1) @map("version")
 
   // ─── Relations ─────────────────────────────────
-  companyUsers CompanyUser[]
-  sessions     Session[]
+  companyUsers    CompanyUser[]
+  sessions        Session[]
+  auditLogs       AuditLog[]
+  activityLogs    ActivityLog[]
+  fileAttachments FileAttachment[]
   // PasswordResetToken       PasswordResetToken[]
   // EmailVerificationToken   EmailVerificationToken[]
-  // AuditLog                 AuditLog[]
   // Notification             Notification[]
-  // FileStorage              FileStorage[]
 
   // ─── Indexes ───────────────────────────────────
   @@index([email])
@@ -991,8 +1108,9 @@ model CompanyUser {
   // RouteAssignment       RouteAssignment[]
   // SalesOrder            SalesOrder[]
   // ApprovalHistory       ApprovalHistory[]
+  auditLogs    AuditLog[]
+  activityLogs ActivityLog[]
   // Notification          Notification[]
-  // AuditLog              AuditLog[]
 
   // ─── Constraints ───────────────────────────────
   /// A user can belong only once to a company
@@ -1102,7 +1220,6 @@ model Session {
   // ─── Relations ─────────────────────────────────
   user User @relation(fields: [userId], references: [id])
 
-  // AuditLog       AuditLog[]
   // LoginHistory   LoginHistory[]
   // Notification   Notification[]
 
@@ -1591,4 +1708,390 @@ model UserRole {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("user_roles")
+}
+
+/// Stores all configurable settings for a company.
+/// One company has exactly one CompanySettings record.
+model CompanySettings {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  /// Reference to the owning company (one-to-one)
+  companyId String @unique @map("company_id")
+
+  // ─── General ───────────────────────────────────
+  defaultLanguage         Language @default(EN) @map("default_language")
+  defaultTimezone         Timezone @default(ASIA_KOLKATA) @map("default_timezone")
+  defaultCurrency         Currency @default(INR) @map("default_currency")
+  dateFormat              String   @default("DD/MM/YYYY") @map("date_format")
+  timeFormat              String   @default("HH:mm") @map("time_format")
+  weekStartsOn            Int      @default(1) @map("week_starts_on")
+  financialYearStartMonth Int      @default(4) @map("financial_year_start_month")
+  decimalPrecision        Int      @default(2) @map("decimal_precision")
+  quantityPrecision       Int      @default(2) @map("quantity_precision")
+  pricePrecision          Int      @default(2) @map("price_precision")
+  weightPrecision         Int      @default(2) @map("weight_precision")
+
+  // ─── Business Configuration ────────────────────
+  defaultWarehouseId          String? @map("default_warehouse_id")
+  defaultPriceListId          String? @map("default_price_list_id")
+  defaultTaxId                String? @map("default_tax_id")
+  defaultSalesOrderPrefix     String? @map("default_sales_order_prefix")
+  defaultInvoicePrefix        String? @map("default_invoice_prefix")
+  defaultPurchasePrefix       String? @map("default_purchase_prefix")
+  defaultReturnPrefix         String? @map("default_return_prefix")
+  defaultPaymentPrefix        String? @map("default_payment_prefix")
+  autoGenerateProductCode     Boolean @default(true) @map("auto_generate_product_code")
+  autoGenerateCustomerCode    Boolean @default(true) @map("auto_generate_customer_code")
+  autoGenerateDistributorCode Boolean @default(true) @map("auto_generate_distributor_code")
+  autoGenerateSalesOrderNumber Boolean @default(true) @map("auto_generate_sales_order_number")
+  autoGenerateInvoiceNumber   Boolean @default(true) @map("auto_generate_invoice_number")
+  /// JSON config for number series patterns
+  numberSeries Json? @map("number_series")
+
+  // ─── Inventory ─────────────────────────────────
+  allowNegativeInventory      Boolean @default(false) @map("allow_negative_inventory")
+  enableBatchTracking         Boolean @default(false) @map("enable_batch_tracking")
+  enableExpiryTracking        Boolean @default(false) @map("enable_expiry_tracking")
+  enableSerialNumberTracking  Boolean @default(false) @map("enable_serial_number_tracking")
+  enableMultiWarehouse        Boolean @default(false) @map("enable_multi_warehouse")
+  stockReservationEnabled     Boolean @default(false) @map("stock_reservation_enabled")
+  defaultStockValuationMethod String? @map("default_stock_valuation_method")
+
+  // ─── Tax ───────────────────────────────────────
+  defaultTaxType String? @map("default_tax_type")
+  gstEnabled     Boolean @default(true) @map("gst_enabled")
+  tdsEnabled     Boolean @default(false) @map("tds_enabled")
+  tcsEnabled     Boolean @default(false) @map("tcs_enabled")
+  roundOffMethod String? @map("round_off_method")
+
+  // ─── Workflow ──────────────────────────────────
+  approvalWorkflowEnabled  Boolean @default(false) @map("approval_workflow_enabled")
+  salesApprovalRequired    Boolean @default(false) @map("sales_approval_required")
+  purchaseApprovalRequired Boolean @default(false) @map("purchase_approval_required")
+  paymentApprovalRequired  Boolean @default(false) @map("payment_approval_required")
+  returnApprovalRequired   Boolean @default(false) @map("return_approval_required")
+
+  // ─── Security ──────────────────────────────────
+  /// JSON config for password complexity rules
+  passwordPolicy       Json?   @map("password_policy")
+  sessionTimeout       Int     @default(30) @map("session_timeout")
+  maxConcurrentSessions Int    @default(5) @map("max_concurrent_sessions")
+  enableTwoFactor      Boolean @default(false) @map("enable_two_factor")
+  ipWhitelistingEnabled Boolean @default(false) @map("ip_whitelisting_enabled")
+  /// JSON array of allowed IP addresses
+  allowedIpAddresses   Json?   @map("allowed_ip_addresses")
+
+  // ─── Feature Flags ─────────────────────────────
+  /// JSON object of feature toggles
+  featureFlags Json? @map("feature_flags")
+
+  // ─── Notification ──────────────────────────────
+  /// JSON config for notification channels and templates
+  notificationSettings Json? @map("notification_settings")
+  /// JSON config for SMTP / email provider
+  emailSettings Json? @map("email_settings")
+  /// JSON config for SMS provider
+  smsSettings   Json? @map("sms_settings")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  company Company @relation(fields: [companyId], references: [id])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyId])
+  @@index([isDeleted])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("company_settings")
+}
+
+/// Immutable security and compliance log.
+/// Records are never updated or physically deleted.
+model AuditLog {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  companyId      String? @map("company_id")
+  userId         String? @map("user_id")
+  companyUserId  String? @map("company_user_id")
+
+  // ─── Entity ────────────────────────────────────
+  /// Name of the entity that was changed (e.g., "Order", "Product")
+  entityName String @map("entity_name")
+  /// ID of the entity record
+  entityId   String @map("entity_id")
+
+  // ─── Operation ─────────────────────────────────
+  /// What operation was performed
+  operation AuditOperation @map("operation")
+  /// Snapshot of values before the change
+  oldValues Json? @map("old_values")
+  /// Snapshot of values after the change
+  newValues Json? @map("new_values")
+  /// List of field names that were changed
+  changedFields Json? @map("changed_fields")
+  /// Why the change was made
+  reason String? @map("reason")
+
+  // ─── Request ───────────────────────────────────
+  /// Correlation ID for the API request
+  requestId String? @map("request_id")
+  /// Distributed tracing ID
+  traceId   String? @map("trace_id")
+  /// Auth session ID
+  sessionId String? @map("session_id")
+
+  // ─── Client ────────────────────────────────────
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  /// Device identifier from the session
+  device    String? @map("device")
+  browser   String? @map("browser")
+  platform  String? @map("platform")
+
+  // ─── Geo ───────────────────────────────────────
+  country String? @map("country")
+  state   String? @map("state")
+  city    String? @map("city")
+
+  // ─── Result ────────────────────────────────────
+  /// When the operation was performed
+  performedAt   DateTime @default(now()) @map("performed_at")
+  /// Whether the operation succeeded
+  success       Boolean  @default(true) @map("success")
+  /// Why the operation failed (if applicable)
+  failureReason String?  @map("failure_reason")
+  /// Importance level of this audit entry
+  severity      AuditSeverity @default(INFO) @map("severity")
+
+  // ─── Retention ─────────────────────────────────
+  /// Auto-delete marker for data retention policies
+  retentionUntil DateTime? @map("retention_until")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  /// Optimistic locking — incremented on every update
+  version   Int      @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  company     Company?     @relation(fields: [companyId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id])
+  companyUser CompanyUser? @relation(fields: [companyUserId], references: [id])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyId])
+  @@index([userId])
+  @@index([entityName])
+  @@index([entityId])
+  @@index([operation])
+  @@index([performedAt])
+  @@index([requestId])
+  @@index([traceId])
+  @@index([severity])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("audit_logs")
+}
+
+/// User activity timeline for normal business operations.
+/// Unlike AuditLog, this tracks everyday activities for the UI feed.
+model ActivityLog {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  companyId     String? @map("company_id")
+  userId        String? @map("user_id")
+  companyUserId String? @map("company_user_id")
+
+  // ─── Activity ──────────────────────────────────
+  /// Short human-readable title (e.g., "Order #ORD001 approved")
+  title        String       @map("title")
+  /// Optional detailed description
+  description  String?      @map("description")
+  /// Category of activity
+  activityType ActivityType @map("activity_type")
+  /// Functional module (e.g., "Sales", "Inventory")
+  module       String?      @map("module")
+
+  // ─── Entity ────────────────────────────────────
+  entityName String? @map("entity_name")
+  entityId   String? @map("entity_id")
+
+  // ─── Reference ─────────────────────────────────
+  /// Human-readable reference (e.g., "ORD-001")
+  referenceNumber String? @map("reference_number")
+  /// Type of reference (e.g., "SalesOrder")
+  referenceType   String? @map("reference_type")
+
+  // ─── Status ────────────────────────────────────
+  status ActivityStatus @default(SUCCESS) @map("status")
+
+  // ─── UI ────────────────────────────────────────
+  /// Icon identifier for the activity feed
+  icon  String? @map("icon")
+  /// Theme colour for the activity badge
+  color String? @map("color")
+  /// Frontend route to navigate to
+  route String? @map("route")
+
+  // ─── Audit ─────────────────────────────────────
+  /// When the activity occurred
+  performedAt DateTime @default(now()) @map("performed_at")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  company     Company?     @relation(fields: [companyId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id])
+  companyUser CompanyUser? @relation(fields: [companyUserId], references: [id])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyId])
+  @@index([userId])
+  @@index([activityType])
+  @@index([module])
+  @@index([performedAt])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("activity_logs")
+}
+
+/// Centralized file attachment metadata.
+/// Actual file content is stored in external storage (S3, Azure, MinIO, etc.).
+model FileAttachment {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  companyId   String @map("company_id")
+  uploadedBy  String @map("uploaded_by")
+
+  // ─── File Identity ─────────────────────────────
+  /// Original name from the uploader's device
+  originalFileName String @map("original_file_name")
+  /// Unique name stored on the storage provider
+  storedFileName   String @map("stored_file_name")
+  /// File extension without dot (e.g., "pdf", "jpg")
+  fileExtension    String @map("file_extension")
+  /// MIME type (e.g., "application/pdf")
+  mimeType         String @map("mime_type")
+  /// Broad classification of the file
+  fileCategory     FileCategory @map("file_category")
+  /// File size in bytes
+  fileSize         BigInt @map("file_size")
+
+  // ─── Storage ───────────────────────────────────
+  storageProvider StorageProvider @map("storage_provider")
+  bucketName      String          @map("bucket_name")
+  /// Full path / key within the bucket
+  storagePath     String          @map("storage_path")
+  /// Publicly accessible URL (if applicable)
+  publicUrl       String?         @map("public_url")
+  /// URL for thumbnail / preview
+  thumbnailUrl    String?         @map("thumbnail_url")
+  /// Hash for integrity verification
+  checksum        String?         @map("checksum")
+
+  // ─── Entity Link ───────────────────────────────
+  /// Type of entity this file is attached to (e.g., "Product", "Invoice")
+  entityType String? @map("entity_type")
+  /// ID of the entity this file belongs to
+  entityId   String? @map("entity_id")
+  /// Virtual folder path for organisation
+  folder     String? @map("folder")
+
+  // ─── Security ──────────────────────────────────
+  isPublic            Boolean  @default(false) @map("is_public")
+  isEncrypted         Boolean  @default(false) @map("is_encrypted")
+  encryptionAlgorithm String?  @map("encryption_algorithm")
+  virusScanStatus     VirusScanStatus @default(NOT_SCANNED) @map("virus_scan_status")
+  virusScannedAt      DateTime?       @map("virus_scanned_at")
+
+  // ─── Access ────────────────────────────────────
+  downloadCount    Int       @default(0) @map("download_count")
+  lastDownloadedAt DateTime? @map("last_downloaded_at")
+
+  // ─── Expiry ────────────────────────────────────
+  /// Auto-delete date (for temporary files)
+  expiresAt DateTime? @map("expires_at")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  company    Company @relation(fields: [companyId], references: [id])
+  uploadedByUser User @relation(fields: [uploadedBy], references: [id])
+
+  // ─── Constraints ───────────────────────────────
+  /// Checksum must be unique within a company
+  @@unique([companyId, checksum])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([fileCategory])
+  @@index([mimeType])
+  @@index([storageProvider])
+  @@index([uploadedBy])
+  @@index([createdAt])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("file_attachments")
 }
