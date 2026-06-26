@@ -344,6 +344,24 @@ enum LogoutReason {
   @@map("logout_reason")
 }
 
+/// Origin classification of a role
+enum RoleType {
+  SYSTEM
+  DEFAULT
+  CUSTOM
+
+  @@map("role_type")
+}
+
+/// Lifecycle status of a role record
+enum RoleStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+
+  @@map("role_status")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -473,6 +491,7 @@ model Company {
 
   // ─── Relations ─────────────────────────────────
   companyUsers CompanyUser[]
+  roles        Role[]
   // Warehouses     Warehouse[]
   // Products       Product[]
   // Retailers      Retailer[]
@@ -480,7 +499,6 @@ model Company {
   // Salesmen       Salesman[]
   // Routes         Route[]
   // Orders         Order[]
-  // Roles          Role[]
   // Permissions    Permission[]
   // Masters        Master[]
 
@@ -960,4 +978,99 @@ model Session {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("sessions")
+}
+
+/// Company-specific role for RBAC. Every company has its own set of roles.
+/// Supports SYSTEM (seeded), DEFAULT (auto-created), and CUSTOM (user-created) types.
+model Role {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  /// Reference to the owning company
+  companyId String @map("company_id")
+
+  // ─── Basic Information ─────────────────────────
+  /// Human-readable role name (e.g., "Sales Manager")
+  name String @map("name")
+  /// Unique code for programmatic reference (e.g., "SALES_MANAGER")
+  code        String  @map("code")
+  displayName String? @map("display_name")
+  description String? @map("description")
+
+  // ─── Role Type ─────────────────────────────────
+  roleType RoleType @default(CUSTOM) @map("role_type")
+
+  // ─── Hierarchy ─────────────────────────────────
+  /// Self-referencing FK for role hierarchy (e.g., Manager > Executive)
+  parentRoleId    String? @map("parent_role_id")
+  /// Numeric level in the role hierarchy tree
+  hierarchyLevel  Int     @default(0) @map("hierarchy_level")
+  /// Display / sorting priority (lower = higher)
+  priority        Int     @default(0) @map("priority")
+
+  // ─── Permissions ───────────────────────────────
+  /// Whether this is a system-protected role
+  isSystemRole  Boolean @default(false) @map("is_system_role")
+  /// Whether the role name/code can be modified
+  isEditable    Boolean @default(true) @map("is_editable")
+  /// Whether the role can be deleted
+  isDeletable   Boolean @default(true) @map("is_deletable")
+  /// Whether the role can be assigned to users
+  isAssignable  Boolean @default(true) @map("is_assignable")
+
+  // ─── Dashboard ─────────────────────────────────
+  /// Default landing page route for users with this role
+  defaultLandingPage String? @map("default_landing_page")
+  /// Default module to show on login
+  defaultModule      String? @map("default_module")
+
+  // ─── Status ────────────────────────────────────
+  status   RoleStatus @default(ACTIVE) @map("status")
+  isActive Boolean    @default(true)  @map("is_active")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  company     Company @relation(fields: [companyId], references: [id])
+  /// Self-relation: parent role in the hierarchy
+  parentRole  Role?   @relation("RoleHierarchy", fields: [parentRoleId], references: [id])
+  /// Inverse self-relation: child roles beneath this one
+  childRoles  Role[]  @relation("RoleHierarchy")
+
+  // UserRole         UserRole[]
+  // RolePermission   RolePermission[]
+
+  // ─── Constraints ───────────────────────────────
+  /// Role name must be unique within a company
+  @@unique([companyId, name])
+  /// Role code must be unique within a company
+  @@unique([companyId, code])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyId])
+  @@index([name])
+  @@index([code])
+  @@index([status])
+  @@index([roleType])
+  @@index([parentRoleId])
+  @@index([isDeleted])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("roles")
 }
