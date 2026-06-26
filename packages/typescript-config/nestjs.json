@@ -5,11 +5,9 @@
     "declaration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "outDir": "./dist",
+    "module": "commonjs",
+    "moduleResolution": "node10",
     "removeComments": true,
     "sourceMap": true
-  },
-  "exclude": ["node_modules", "dist"]
+  }
 }

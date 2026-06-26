@@ -7,3 +7,5 @@ export * from './user-agent.util';
 export * from './ip.util';
 export * from './device.util';
 export * from './date.util';
+export * from './auth.util';
+export * from './security.util';

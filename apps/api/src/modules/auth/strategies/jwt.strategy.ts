@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import type { Algorithm } from 'jsonwebtoken';
 import type { AccessTokenPayload, AuthenticatedUser } from '../types/auth.types';
 import type { EnvironmentVariables } from '@/config/env.validation';
 
@@ -11,17 +12,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_ACCESS_SECRET', { infer: true }),
-      algorithms: [configService.get('JWT_ALGORITHM', { infer: true })],
-      issuer: configService.get('JWT_ISSUER', { infer: true }),
-      audience: configService.get('JWT_AUDIENCE', { infer: true }),
+      secretOrKey: configService.get<string>('JWT_ACCESS_SECRET'),
+      algorithms: [configService.get<Algorithm>('JWT_ALGORITHM')],
+      issuer: configService.get<string>('JWT_ISSUER'),
+      audience: configService.get<string>('JWT_AUDIENCE'),
     });
   }
 
   validate(payload: AccessTokenPayload): AuthenticatedUser {
     return {
       id: payload.sub,
-      email: payload.email,
       isEmailVerified: true,
       isActive: true,
     };

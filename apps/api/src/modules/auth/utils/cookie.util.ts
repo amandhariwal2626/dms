@@ -1,32 +1,43 @@
 import type { CookieOptions, Response } from 'express';
 import { COOKIE_NAMES } from '../constants/auth.constants';
 
-const DEFAULT_COOKIE_OPTIONS: CookieOptions = {
+interface CookieConfig {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: 'lax' | 'strict' | 'none';
+  domain?: string;
+  path: string;
+}
+
+const DEFAULT_COOKIE_CONFIG: CookieConfig = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax',
   path: '/',
 };
 
-export function setAccessTokenCookie(response: Response, token: string, maxAge: number): void {
+function buildCookieOptions(overrides: Partial<CookieConfig>): CookieOptions {
+  return { ...DEFAULT_COOKIE_CONFIG, ...overrides };
+}
+
+export function createAccessCookie(response: Response, token: string, maxAge: number): void {
   response.cookie(COOKIE_NAMES.ACCESS_TOKEN, token, {
-    ...DEFAULT_COOKIE_OPTIONS,
+    ...buildCookieOptions({ path: '/' }),
     maxAge,
   });
 }
 
-export function setRefreshTokenCookie(response: Response, token: string, maxAge: number): void {
+export function clearAccessCookie(response: Response): void {
+  response.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, buildCookieOptions({ path: '/' }));
+}
+
+export function createRefreshCookie(response: Response, token: string, maxAge: number): void {
   response.cookie(COOKIE_NAMES.REFRESH_TOKEN, token, {
-    ...DEFAULT_COOKIE_OPTIONS,
+    ...buildCookieOptions({ path: '/api/auth' }),
     maxAge,
-    path: '/api/auth',
   });
 }
 
-export function clearAuthCookies(response: Response): void {
-  response.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, DEFAULT_COOKIE_OPTIONS);
-  response.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, {
-    ...DEFAULT_COOKIE_OPTIONS,
-    path: '/api/auth',
-  });
+export function clearRefreshCookie(response: Response): void {
+  response.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, buildCookieOptions({ path: '/api/auth' }));
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import type { Algorithm } from 'jsonwebtoken';
 import { Request } from 'express';
 import type { RefreshTokenPayload } from '../types/auth.types';
 import { HEADER_NAMES } from '../constants/auth.constants';
@@ -13,10 +14,10 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
     super({
       jwtFromRequest: ExtractJwt.fromHeader(HEADER_NAMES.REFRESH_TOKEN),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_REFRESH_SECRET', { infer: true }),
-      algorithms: [configService.get('JWT_ALGORITHM', { infer: true })],
-      issuer: configService.get('JWT_ISSUER', { infer: true }),
-      audience: configService.get('JWT_AUDIENCE', { infer: true }),
+      secretOrKey: configService.get<string>('JWT_REFRESH_SECRET'),
+      algorithms: [configService.get<Algorithm>('JWT_ALGORITHM')],
+      issuer: configService.get<string>('JWT_ISSUER'),
+      audience: configService.get<string>('JWT_AUDIENCE'),
       passReqToCallback: true,
     });
   }
