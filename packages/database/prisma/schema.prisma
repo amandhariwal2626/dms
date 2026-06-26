@@ -416,6 +416,28 @@ enum HttpMethod {
   @@map("http_method")
 }
 
+/// Lifecycle status of a module
+enum ModuleStatus {
+  ACTIVE
+  INACTIVE
+  DEPRECATED
+
+  @@map("module_status")
+}
+
+/// Functional category grouping for modules
+enum ModuleCategory {
+  CORE
+  MASTER
+  TRANSACTION
+  REPORTS
+  CONFIGURATION
+  INTEGRATION
+  SETTINGS
+
+  @@map("module_category")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -1232,4 +1254,107 @@ model Permission {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("permissions")
+}
+
+/// Represents a functional area of the DMS used for sidebar navigation, permission
+/// grouping, feature management, and licensing.
+model Module {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Basic Information ─────────────────────────
+  /// Human-readable module name (e.g., "Product Master")
+  name String @unique @map("name")
+  /// Unique programmatic code (e.g., "PRODUCT_MASTER")
+  code        String  @unique @map("code")
+  /// UI display label
+  displayName String? @map("display_name")
+  /// Purpose of this module
+  description String? @map("description")
+
+  // ─── Hierarchy ─────────────────────────────────
+  /// Self-referencing FK for parent-child module nesting
+  parentModuleId String? @map("parent_module_id")
+  /// Depth level in the module tree (0 = root)
+  level         Int     @default(0) @map("level")
+  /// Sort order for UI rendering
+  displayOrder  Int     @default(0) @map("display_order")
+
+  // ─── Navigation ────────────────────────────────
+  /// Frontend route path
+  route   String? @map("route")
+  /// Icon identifier for sidebar / navbar
+  icon    String? @map("icon")
+  /// Unique key for programmatic menu identification
+  menuKey String? @map("menu_key")
+  /// Badge / notification count flag
+  badge   String? @map("badge")
+
+  // ─── Visibility ────────────────────────────────
+  showInSidebar Boolean @default(true) @map("show_in_sidebar")
+  showInNavbar  Boolean @default(true) @map("show_in_navbar")
+  showInMobile  Boolean @default(true) @map("show_in_mobile")
+  showInSettings Boolean @default(true) @map("show_in_settings")
+
+  // ─── Feature Flags ─────────────────────────────
+  /// Module is essential for the system to function
+  isCoreModule         Boolean @default(false) @map("is_core_module")
+  /// Module is part of the system (non-removable)
+  isSystemModule       Boolean @default(false) @map("is_system_module")
+  /// Module requires a license to enable
+  isLicensable         Boolean @default(false) @map("is_licensable")
+  /// Module is enabled for all companies by default
+  isEnabledByDefault   Boolean @default(true)  @map("is_enabled_by_default")
+  /// Module requires a paid subscription tier
+  requiresSubscription Boolean @default(false) @map("requires_subscription")
+  /// Key used to check subscription feature access
+  subscriptionFeatureKey String? @map("subscription_feature_key")
+
+  // ─── UI ────────────────────────────────────────
+  /// Theme colour for the module icon / badge
+  color     String?         @map("color")
+  /// Functional grouping category
+  category  ModuleCategory? @map("category")
+  /// Logical group name for collapsible sidebar sections
+  groupName String?         @map("group_name")
+
+  // ─── Status ────────────────────────────────────
+  status   ModuleStatus @default(ACTIVE) @map("status")
+  isActive Boolean      @default(true)  @map("is_active")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  /// Parent module in the hierarchy
+  parentModule Module? @relation("ModuleHierarchy", fields: [parentModuleId], references: [id])
+  /// Child modules nested under this one
+  childModules Module[] @relation("ModuleHierarchy")
+
+  // Permission   Permission[]
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([name])
+  @@index([code])
+  @@index([displayOrder])
+  @@index([parentModuleId])
+  @@index([status])
+  @@index([isDeleted])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("modules")
 }
