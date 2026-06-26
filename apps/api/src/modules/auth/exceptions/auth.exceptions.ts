@@ -92,6 +92,18 @@ export class PasswordMismatchException extends HttpException {
   }
 }
 
+export class UserNotFoundException extends HttpException {
+  constructor(message = 'User not found') {
+    super({ status: 'error', message, code: 'USER_NOT_FOUND' }, HttpStatus.NOT_FOUND);
+  }
+}
+
+export class InactiveUserException extends HttpException {
+  constructor(message = 'Account is not active. Please contact support') {
+    super({ status: 'error', message, code: 'INACTIVE_USER' }, HttpStatus.FORBIDDEN);
+  }
+}
+
 export class InvalidOtpException extends HttpException {
   constructor(message = 'Invalid or expired OTP') {
     super({ status: 'error', message, code: 'INVALID_OTP' }, HttpStatus.BAD_REQUEST);

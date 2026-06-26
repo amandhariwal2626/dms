@@ -2,18 +2,28 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Prisma } from '@prisma/client';
 import type { BusinessType } from '@prisma/client';
-import type { RegisterDto } from '../dto/auth.dto';
+import type { RegisterDto, LoginDto } from '../dto/auth.dto';
 import { PasswordService } from './password.service';
+import { TokenService } from './token.service';
+import { JwtConfigService } from './jwt-config.service';
+import { HashService } from './hash.service';
+import { SessionTokenService } from './session-token.service';
 import { AuthRepository } from '../repositories/auth.repository';
 import {
   DuplicateEmailException,
   PasswordMismatchException,
   TermsNotAcceptedException,
   WeakPasswordException,
+  InvalidCredentialsException,
+  EmailNotVerifiedException,
+  AccountLockedException,
+  InactiveUserException,
 } from '../exceptions/auth.exceptions';
-import { normalizeEmail } from '../utils/auth.util';
-import { UserRegisteredEvent } from '../events/auth.events';
+import { normalizeEmail, normalizeUsername } from '../utils/auth.util';
+import { UserRegisteredEvent, UserLoggedInEvent } from '../events/auth.events';
 import { createDefaultCompanySettings } from '../utils/company-settings.util';
+import { LOGIN_CONSTANTS } from '../constants/auth.constants';
+import { addMinutes, parseExpiry } from '../utils/date.util';
 
 export interface RegisterResponse {
   success: true;
@@ -24,12 +34,42 @@ export interface RegisterResponse {
   nextStep: 'VERIFY_EMAIL';
 }
 
+export interface LoginCompanyInfo {
+  companyId: string;
+  companyCode: string;
+  legalName: string;
+  displayName: string;
+  isDefault: boolean;
+}
+
+export interface LoginResponse {
+  success: true;
+  message: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string | null;
+    displayName: string | null;
+  };
+  companies: LoginCompanyInfo[];
+  defaultCompany: LoginCompanyInfo;
+  requiresCompanySelection: boolean;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
     private readonly passwordService: PasswordService,
+    private readonly tokenService: TokenService,
+    private readonly jwtConfigService: JwtConfigService,
+    private readonly hashService: HashService,
+    private readonly sessionTokenService: SessionTokenService,
     private readonly authRepository: AuthRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -102,6 +142,10 @@ export class AuthService {
             employeeCode,
             officialEmail: normalizedEmail,
             officialMobileNumber: dto.mobileNumber,
+            isPrimaryCompany: true,
+            isDefaultCompany: true,
+            status: 'ACTIVE',
+            isActive: true,
           },
         });
 
@@ -174,6 +218,187 @@ export class AuthService {
 
     this.logger.log('Registration completed');
     return result;
+  }
+
+  async login(dto: LoginDto): Promise<LoginResponse> {
+    this.logger.log('Login started');
+
+    const identifier = dto.emailOrUsername.toLowerCase().trim();
+    const isEmail = identifier.includes('@');
+    const normalizedIdentifier = isEmail
+      ? normalizeEmail(identifier)
+      : normalizeUsername(identifier);
+
+    const user = await this.authRepository.findUserByEmailOrUsername(normalizedIdentifier);
+
+    if (!user) {
+      this.logger.warn(`Login failed: user not found for ${normalizedIdentifier}`);
+      throw new InvalidCredentialsException();
+    }
+
+    const passwordValid = await this.passwordService.verifyPassword(
+      dto.password,
+      user.passwordHash,
+    );
+    if (!passwordValid) {
+      this.logger.warn(`Login failed: invalid password for user ${user.id}`);
+
+      const newAttemptCount = user.failedLoginAttempts + 1;
+      await this.authRepository.incrementFailedAttempts(user.id);
+
+      if (newAttemptCount >= LOGIN_CONSTANTS.MAX_FAILED_ATTEMPTS) {
+        const lockUntil = addMinutes(new Date(), LOGIN_CONSTANTS.LOCKOUT_DURATION_MINUTES);
+        await this.authRepository.lockAccount(user.id, lockUntil);
+        this.logger.warn(`Account locked for user ${user.id} until ${lockUntil.toISOString()}`);
+      }
+
+      throw new InvalidCredentialsException();
+    }
+
+    if (user.isDeleted) {
+      this.logger.warn(`Login failed: deleted user ${user.id}`);
+      throw new InactiveUserException();
+    }
+
+    if (user.status !== 'ACTIVE') {
+      this.logger.warn(`Login failed: inactive user ${user.id} (status: ${user.status})`);
+      throw new InactiveUserException();
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(`Login failed: inactive user ${user.id}`);
+      throw new InactiveUserException();
+    }
+
+    if (!user.emailVerified) {
+      this.logger.warn(`Login failed: email not verified for user ${user.id}`);
+      throw new EmailNotVerifiedException();
+    }
+
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      this.logger.warn(`Login failed: locked account for user ${user.id}`);
+      throw new AccountLockedException();
+    }
+
+    const companyMemberships = await this.authRepository.findActiveCompanyMemberships(user.id);
+
+    if (companyMemberships.length === 0) {
+      this.logger.warn(`Login failed: no active company memberships for user ${user.id}`);
+      throw new InvalidCredentialsException();
+    }
+
+    const sessionJwtId = this.sessionTokenService.generateAccessTokenIdentifier();
+    const refreshTokenIdentifier = this.sessionTokenService.generateRefreshTokenIdentifier();
+    const refreshTokenVersion = user.refreshTokenVersion;
+
+    const sessionResult = await this.authRepository.$transaction(async (tx) => {
+      const session = await tx.session.create({
+        data: {
+          userId: user.id,
+          accessTokenId: sessionJwtId,
+          refreshTokenHash: this.hashService.hash(refreshTokenIdentifier),
+          refreshTokenVersion,
+          jwtId: sessionJwtId,
+          deviceId: dto.deviceInfo?.deviceId ?? null,
+          deviceName: dto.deviceInfo?.deviceName ?? null,
+          deviceType: null,
+          operatingSystem: dto.deviceInfo?.operatingSystem ?? null,
+          osVersion: dto.deviceInfo?.osVersion ?? null,
+          browser: dto.deviceInfo?.browser ?? null,
+          browserVersion: dto.deviceInfo?.browserVersion ?? null,
+          ipAddress: null,
+          userAgent: null,
+          loginAt: new Date(),
+          lastActivityAt: new Date(),
+          isCurrentSession: true,
+          rememberMe: dto.rememberMe ?? false,
+          status: 'ACTIVE',
+        },
+      });
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginAt: new Date(),
+          lastLoginIp: null,
+          lastLoginUserAgent: null,
+          lastLoginDevice: dto.deviceInfo?.deviceName ?? null,
+          failedLoginAttempts: 0,
+          lockUntil: null,
+        },
+      });
+
+      return { session };
+    });
+
+    const tokenPair = await this.tokenService.generateTokenPair({
+      userId: user.id,
+      sessionId: sessionResult.session.id,
+      tokenVersion: 0,
+      refreshTokenVersion,
+    });
+
+    const defaultMembership =
+      companyMemberships.find((m) => m.isDefaultCompany) ?? companyMemberships[0];
+    if (!defaultMembership) {
+      throw new InvalidCredentialsException();
+    }
+
+    const companies: LoginCompanyInfo[] = companyMemberships.map((m) => ({
+      companyId: m.company.id,
+      companyCode: m.company.companyCode,
+      legalName: m.company.legalName,
+      displayName: m.company.displayName || m.company.legalName,
+      isDefault: m.isDefaultCompany,
+    }));
+
+    const defaultCompany: LoginCompanyInfo = {
+      companyId: defaultMembership.company.id,
+      companyCode: defaultMembership.company.companyCode,
+      legalName: defaultMembership.company.legalName,
+      displayName: defaultMembership.company.displayName || defaultMembership.company.legalName,
+      isDefault: true,
+    };
+
+    const accessExpiryMs = parseExpiry(this.jwtConfigService.accessToken.expiresIn);
+    const expiresIn = Math.floor(accessExpiryMs / 1000);
+
+    this.eventEmitter.emit(
+      UserLoggedInEvent.eventName,
+      new UserLoggedInEvent(user.id, sessionResult.session.id, undefined),
+    );
+
+    await this.authRepository.createActivityLog({
+      company: { connect: { id: defaultMembership.company.id } },
+      user: { connect: { id: user.id } },
+      companyUser: { connect: { id: defaultMembership.id } },
+      title: 'User Logged In',
+      activityType: 'LOGIN',
+      module: 'AUTH',
+      entityName: 'User',
+      entityId: user.id,
+      performedAt: new Date(),
+    });
+
+    this.logger.log(`Login successful for user ${user.id}`);
+
+    return {
+      success: true,
+      message: 'Login successful',
+      accessToken: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+      expiresIn,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName,
+      },
+      companies,
+      defaultCompany,
+      requiresCompanySelection: companies.length > 1,
+    };
   }
 
   private async getNextCompanyCodeSafe(tx: Prisma.TransactionClient): Promise<string> {

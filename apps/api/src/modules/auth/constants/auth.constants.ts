@@ -55,6 +55,11 @@ export const CACHE_KEYS = {
   PASSWORD_RESET: (email: string) => `reset:${email}`,
 } as const;
 
+export const LOGIN_CONSTANTS = {
+  MAX_FAILED_ATTEMPTS: 5,
+  LOCKOUT_DURATION_MINUTES: 15,
+} as const;
+
 export const EVENT_NAMES = {
   USER_REGISTERED: 'auth.user.registered',
   USER_LOGGED_IN: 'auth.user.logged_in',

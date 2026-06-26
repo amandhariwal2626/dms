@@ -7,7 +7,9 @@ import {
   IsString,
   Matches,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RegisterDto {
   @IsString()
@@ -55,13 +57,7 @@ export class RegisterDto {
   acceptTerms!: boolean;
 }
 
-export class LoginDto {
-  @IsEmail()
-  email!: string;
-
-  @IsString()
-  password!: string;
-
+export class DeviceInfoDto {
   @IsOptional()
   @IsString()
   deviceId?: string;
@@ -69,6 +65,45 @@ export class LoginDto {
   @IsOptional()
   @IsString()
   deviceName?: string;
+
+  @IsOptional()
+  @IsString()
+  deviceType?: string;
+
+  @IsOptional()
+  @IsString()
+  operatingSystem?: string;
+
+  @IsOptional()
+  @IsString()
+  osVersion?: string;
+
+  @IsOptional()
+  @IsString()
+  browser?: string;
+
+  @IsOptional()
+  @IsString()
+  browserVersion?: string;
+}
+
+export class LoginDto {
+  @IsString()
+  @IsNotEmpty()
+  emailOrUsername!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DeviceInfoDto)
+  deviceInfo?: DeviceInfoDto;
 }
 
 export class RefreshTokenDto {
