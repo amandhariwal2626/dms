@@ -77,10 +77,7 @@ export class AuthRepository {
   async findUserByEmailOrUsername(identifier: string) {
     return this.prisma.user.findFirst({
       where: {
-        OR: [
-          { normalizedEmail: identifier },
-          { normalizedUsername: identifier },
-        ],
+        OR: [{ normalizedEmail: identifier }, { normalizedUsername: identifier }],
       },
     });
   }

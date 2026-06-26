@@ -1,12 +1,7 @@
 import { Body, Controller, Post, Query } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { EmailVerificationService } from '../services/email-verification.service';
-import {
-  RegisterDto,
-  LoginDto,
-  SendVerificationDto,
-  VerifyEmailDto,
-} from '../dto/auth.dto';
+import { RegisterDto, LoginDto, SendVerificationDto, VerifyEmailDto } from '../dto/auth.dto';
 import type { VerificationPurpose } from '@prisma/client';
 
 @Controller('auth')

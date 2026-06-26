@@ -225,7 +225,9 @@ export class AuthService {
 
     const identifier = dto.emailOrUsername.toLowerCase().trim();
     const isEmail = identifier.includes('@');
-    const normalizedIdentifier = isEmail ? normalizeEmail(identifier) : normalizeUsername(identifier);
+    const normalizedIdentifier = isEmail
+      ? normalizeEmail(identifier)
+      : normalizeUsername(identifier);
 
     const user = await this.authRepository.findUserByEmailOrUsername(normalizedIdentifier);
 
@@ -234,7 +236,10 @@ export class AuthService {
       throw new InvalidCredentialsException();
     }
 
-    const passwordValid = await this.passwordService.verifyPassword(dto.password, user.passwordHash);
+    const passwordValid = await this.passwordService.verifyPassword(
+      dto.password,
+      user.passwordHash,
+    );
     if (!passwordValid) {
       this.logger.warn(`Login failed: invalid password for user ${user.id}`);
 
@@ -333,8 +338,8 @@ export class AuthService {
       refreshTokenVersion,
     });
 
-    const defaultMembership = companyMemberships.find((m) => m.isDefaultCompany)
-      ?? companyMemberships[0];
+    const defaultMembership =
+      companyMemberships.find((m) => m.isDefaultCompany) ?? companyMemberships[0];
     if (!defaultMembership) {
       throw new InvalidCredentialsException();
     }

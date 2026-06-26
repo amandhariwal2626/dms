@@ -299,9 +299,9 @@ describe('AuthService', () => {
     function setupSuccessfulLoginMocks() {
       authRepository.findUserByEmailOrUsername.mockResolvedValue(mockUser);
       passwordService.verifyPassword.mockResolvedValue(true);
-      authRepository.findActiveCompanyMemberships.mockResolvedValue(
-        [mockCompanyMembership] as never,
-      );
+      authRepository.findActiveCompanyMemberships.mockResolvedValue([
+        mockCompanyMembership,
+      ] as never);
       tokenService.generateTokenPair.mockResolvedValue(mockTokenPair);
       authRepository.$transaction.mockImplementation(
         (fn: (tx: Prisma.TransactionClient) => Promise<unknown>) =>
@@ -328,9 +328,10 @@ describe('AuthService', () => {
 
     it('should login successfully with multiple companies', async () => {
       setupSuccessfulLoginMocks();
-      authRepository.findActiveCompanyMemberships.mockResolvedValue(
-        [mockCompanyMembership, mockSecondMembership] as never,
-      );
+      authRepository.findActiveCompanyMemberships.mockResolvedValue([
+        mockCompanyMembership,
+        mockSecondMembership,
+      ] as never);
 
       const result = await authService.login(mockLoginDto);
 

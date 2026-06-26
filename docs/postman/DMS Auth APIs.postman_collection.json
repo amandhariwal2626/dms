@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "DMS Auth APIs",
+    "description": "Authentication APIs for the DMS platform.\n\n## Environment Variables\n\n| Variable | Initial Value | Description |\n|---|---|---|\n| `base_url` | `http://localhost:3001/api` | API base URL |\n| `access_token` | — | Auto-populated from login/register response |\n| `refresh_token` | — | Auto-populated from login response |\n| `otp` | — | OTP received (manually set from DB or email) |",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otp",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const json = pm.response.json();",
+              "    pm.collectionVariables.set('access_token', json.accessToken);",
+              "    pm.collectionVariables.set('refresh_token', json.refreshToken);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"companyName\": \"Acme Corp\",\n  \"displayName\": \"Acme Corp Pvt Ltd\",\n  \"businessType\": \"PRIVATE_LIMITED\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john@acme.com\",\n  \"mobileNumber\": \"+919876543210\",\n  \"password\": \"StrongPass1!\",\n  \"confirmPassword\": \"StrongPass1!\",\n  \"acceptTerms\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Register a new company and user (self-onboarding).\n\nReturns `nextStep: \"VERIFY_EMAIL\"` — an OTP is automatically sent to the registered email."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Registration successful. Please verify your email.\",\n  \"companyId\": \"uuid\",\n  \"userId\": \"uuid\",\n  \"companyUserId\": \"uuid\",\n  \"nextStep\": \"VERIFY_EMAIL\"\n}"
+        },
+        {
+          "name": "Duplicate Email",
+          "status": "Conflict",
+          "code": 409,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Email is already registered\",\n  \"code\": \"DUPLICATE_EMAIL\"\n}"
+        },
+        {
+          "name": "Weak Password",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Password does not meet strength requirements\",\n  \"errors\": [\"Password must contain at least one uppercase letter\"],\n  \"code\": \"WEAK_PASSWORD\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const json = pm.response.json();",
+              "    pm.collectionVariables.set('access_token', json.accessToken);",
+              "    pm.collectionVariables.set('refresh_token', json.refreshToken);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"emailOrUsername\": \"john@acme.com\",\n  \"password\": \"StrongPass1!\",\n  \"rememberMe\": false,\n  \"deviceInfo\": {\n    \"deviceId\": \"device-001\",\n    \"deviceName\": \"John's iPhone\",\n    \"deviceType\": \"MOBILE\",\n    \"operatingSystem\": \"iOS\",\n    \"osVersion\": \"18.0\",\n    \"browser\": \"Safari\",\n    \"browserVersion\": \"18.0\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Authenticate with email or username.\n\nOn success, `access_token` and `refresh_token` are auto-saved as collection variables."
+      },
+      "response": [
+        {
+          "name": "Success (Single Company)",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"accessToken\": \"jwt...\",\n  \"refreshToken\": \"jwt...\",\n  \"expiresIn\": 900,\n  \"user\": {\n    \"id\": \"uuid\",\n    \"email\": \"john@acme.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"displayName\": null\n  },\n  \"companies\": [\n    {\n      \"companyId\": \"uuid\",\n      \"companyCode\": \"CMP000001\",\n      \"legalName\": \"Acme Corp\",\n      \"displayName\": \"Acme Corp Pvt Ltd\",\n      \"isDefault\": true\n    }\n  ],\n  \"defaultCompany\": {\n    \"companyId\": \"uuid\",\n    \"companyCode\": \"CMP000001\",\n    \"legalName\": \"Acme Corp\",\n    \"displayName\": \"Acme Corp Pvt Ltd\",\n    \"isDefault\": true\n  },\n  \"requiresCompanySelection\": false\n}"
+        },
+        {
+          "name": "Success (Multi Company)",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"accessToken\": \"jwt...\",\n  \"refreshToken\": \"jwt...\",\n  \"expiresIn\": 900,\n  \"user\": {\n    \"id\": \"uuid\",\n    \"email\": \"john@acme.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"displayName\": null\n  },\n  \"companies\": [\n    {\n      \"companyId\": \"uuid\",\n      \"companyCode\": \"CMP000001\",\n      \"legalName\": \"Acme Corp\",\n      \"displayName\": \"Acme Corp Pvt Ltd\",\n      \"isDefault\": true\n    },\n    {\n      \"companyId\": \"uuid\",\n      \"companyCode\": \"CMP000002\",\n      \"legalName\": \"Beta LLC\",\n      \"displayName\": \"Beta LLC\",\n      \"isDefault\": false\n    }\n  ],\n  \"defaultCompany\": {\n    \"companyId\": \"uuid\",\n    \"companyCode\": \"CMP000001\",\n    \"legalName\": \"Acme Corp\",\n    \"displayName\": \"Acme Corp Pvt Ltd\",\n    \"isDefault\": true\n  },\n  \"requiresCompanySelection\": true\n}"
+        },
+        {
+          "name": "Invalid Credentials",
+          "status": "Unauthorized",
+          "code": 401,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid email or password\",\n  \"code\": \"INVALID_CREDENTIALS\"\n}"
+        },
+        {
+          "name": "Email Not Verified",
+          "status": "Forbidden",
+          "code": 403,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Email is not verified\",\n  \"code\": \"EMAIL_NOT_VERIFIED\"\n}"
+        },
+        {
+          "name": "Account Locked",
+          "status": "Forbidden",
+          "code": 403,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Account is locked. Please try again later\",\n  \"code\": \"ACCOUNT_LOCKED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Send Verification",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@acme.com\",\n  \"deviceId\": \"device-001\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/send-verification?purpose=REGISTER",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "send-verification"],
+          "query": [
+            {
+              "key": "purpose",
+              "value": "REGISTER",
+              "description": "Verification purpose (REGISTER, LOGIN, RESET_PASSWORD, CHANGE_EMAIL, INVITE)"
+            }
+          ]
+        },
+        "description": "Send a verification OTP to the given email.\n\nOTP is valid for 15 minutes, max 5 attempts, max 3 resends.\n\nThe OTP is stored as a SHA-256 hash — check the DB (`email_verification_tokens` table) to retrieve it during development."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Verification code sent to your email\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Resend Verification",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@acme.com\",\n  \"deviceId\": \"device-001\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/resend-verification?purpose=REGISTER",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "resend-verification"],
+          "query": [
+            {
+              "key": "purpose",
+              "value": "REGISTER",
+              "description": "Verification purpose"
+            }
+          ]
+        },
+        "description": "Resend a verification OTP (max 3 resends allowed). Invalidates the previous pending OTP."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"New verification code sent to your email\"\n}"
+        },
+        {
+          "name": "Too Many Resends",
+          "status": "Too Many Requests",
+          "code": 429,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Maximum resend limit reached. Please try again later\",\n  \"code\": \"TOO_MANY_ATTEMPTS\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Verify Email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    pm.collectionVariables.set('otp', '');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@acme.com\",\n  \"otp\": \"{{otp}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/verify-email",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "verify-email"]
+        },
+        "description": "Verify an email with the OTP received.\n\n> **Note:** Set the `otp` collection variable manually after retrieving it from the `email_verification_tokens` table.\n> ```sql\n> SELECT otp FROM email_verification_tokens WHERE email = 'john@acme.com' ORDER BY created_at DESC LIMIT 1;\n> ```\n> The OTP is SHA-256 hashed in the DB — this is the raw 6-digit OTP sent to the user."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Email verified successfully\"\n}"
+        },
+        {
+          "name": "Invalid OTP",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid or expired OTP\",\n  \"code\": \"INVALID_OTP\"\n}"
+        },
+        {
+          "name": "OTP Expired",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"OTP has expired. Please request a new one\",\n  \"code\": \"OTP_EXPIRED\"\n}"
+        },
+        {
+          "name": "Too Many Attempts",
+          "status": "Too Many Requests",
+          "code": 429,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Too many attempts. Please try again later\",\n  \"code\": \"TOO_MANY_ATTEMPTS\"\n}"
+        }
+      ]
+    }
+  ]
+}
