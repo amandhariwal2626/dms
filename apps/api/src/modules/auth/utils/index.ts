@@ -9,3 +9,5 @@ export * from './device.util';
 export * from './date.util';
 export * from './auth.util';
 export * from './security.util';
+export * from './company-code.util';
+export * from './company-settings.util';

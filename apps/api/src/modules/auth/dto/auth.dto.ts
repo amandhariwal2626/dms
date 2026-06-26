@@ -1,20 +1,57 @@
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
+  @IsString()
+  companyName!: string;
+
+  @IsString()
+  displayName!: string;
+
+  @IsEnum([
+    'SOLE_PROPRIETORSHIP',
+    'PARTNERSHIP',
+    'LIMITED_LIABILITY_PARTNERSHIP',
+    'PRIVATE_LIMITED',
+    'PUBLIC_LIMITED',
+    'ONE_PERSON_COMPANY',
+    'NON_PROFIT',
+    'GOVERNMENT_UNDERTAKING',
+    'OTHER',
+  ])
+  businessType!: string;
+
+  @IsString()
+  firstName!: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
   @IsEmail()
   email!: string;
+
+  @IsString()
+  @Matches(/^\+?[1-9]\d{1,14}$/, { message: 'Invalid mobile number format' })
+  mobileNumber!: string;
 
   @IsString()
   @MinLength(8)
   password!: string;
 
-  @IsOptional()
   @IsString()
-  deviceId?: string;
+  @MinLength(8)
+  confirmPassword!: string;
 
-  @IsOptional()
-  @IsString()
-  deviceName?: string;
+  @IsBoolean()
+  acceptTerms!: boolean;
 }
 
 export class LoginDto {

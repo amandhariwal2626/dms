@@ -21,4 +21,10 @@ export default [
       '@typescript-eslint/no-redundant-type-constituents': 'off',
     },
   },
+  {
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 ];
