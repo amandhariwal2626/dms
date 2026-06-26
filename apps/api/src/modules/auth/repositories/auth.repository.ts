@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@repo/database';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, VerificationPurpose } from '@prisma/client';
 import { generateCompanyCode, parseCompanyCode } from '../utils/company-code.util';
 
 @Injectable()
@@ -70,5 +70,48 @@ export class AuthRepository {
 
   async $transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(fn);
+  }
+
+  // ─── Email Verification ────────────────────────────
+
+  async createVerificationToken(data: Prisma.EmailVerificationTokenCreateInput) {
+    return this.prisma.emailVerificationToken.create({ data });
+  }
+
+  async findPendingVerification(email: string, purpose: VerificationPurpose) {
+    return this.prisma.emailVerificationToken.findFirst({
+      where: {
+        email,
+        purpose,
+        isUsed: false,
+        isDeleted: false,
+        status: 'PENDING',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateVerificationToken(id: string, data: Prisma.EmailVerificationTokenUpdateInput) {
+    return this.prisma.emailVerificationToken.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async invalidatePendingTokens(email: string, purpose: VerificationPurpose) {
+    return this.prisma.emailVerificationToken.updateMany({
+      where: {
+        email,
+        purpose,
+        isUsed: false,
+        isDeleted: false,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'EXPIRED',
+        isUsed: true,
+        usedAt: new Date(),
+      },
+    });
   }
 }
