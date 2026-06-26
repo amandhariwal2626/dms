@@ -63,3 +63,20 @@ export class CompanySwitchedEvent {
     public readonly toCompanyId: string,
   ) {}
 }
+
+export class TokenRefreshedEvent {
+  static readonly eventName = EVENT_NAMES.TOKEN_REFRESHED;
+  constructor(
+    public readonly userId: string,
+    public readonly sessionId: string,
+  ) {}
+}
+
+export class SessionRevokedEvent {
+  static readonly eventName = EVENT_NAMES.SESSION_REVOKED;
+  constructor(
+    public readonly userId: string,
+    public readonly sessionId: string,
+    public readonly reason: string,
+  ) {}
+}

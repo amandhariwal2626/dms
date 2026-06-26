@@ -69,4 +69,6 @@ export const EVENT_NAMES = {
   EMAIL_VERIFIED: 'auth.email.verified',
   COMPANY_SELECTED: 'auth.company.selected',
   COMPANY_SWITCHED: 'auth.company.switched',
+  TOKEN_REFRESHED: 'auth.token.refreshed',
+  SESSION_REVOKED: 'auth.session.revoked',
 } as const;

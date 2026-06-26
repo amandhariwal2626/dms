@@ -268,6 +268,91 @@ export class AuthRepository {
     });
   }
 
+  // ─── Refresh Token ────────────────────────────────
+
+  findSessionById(sessionId: string) {
+    return this.prisma.session.findUnique({
+      where: { id: sessionId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            isActive: true,
+            isDeleted: true,
+            status: true,
+            emailVerified: true,
+            refreshTokenVersion: true,
+            lockUntil: true,
+          },
+        },
+      },
+    });
+  }
+
+  findCompanyUserByUserId(userId: string) {
+    return this.prisma.companyUser.findFirst({
+      where: {
+        userId,
+        isDeleted: false,
+        isActive: true,
+        status: 'ACTIVE',
+        company: { isDeleted: false, status: 'ACTIVE' },
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            status: true,
+            isDeleted: true,
+          },
+        },
+      },
+    });
+  }
+
+  updateSessionRotation(
+    sessionId: string,
+    data: {
+      refreshTokenHash: string;
+      refreshTokenVersion: number;
+      lastActivityAt: Date;
+      expiresAt: Date | null;
+    },
+  ) {
+    return this.prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        refreshTokenHash: data.refreshTokenHash,
+        refreshTokenVersion: data.refreshTokenVersion,
+        lastActivityAt: data.lastActivityAt,
+        expiresAt: data.expiresAt,
+        metadata: {
+          lastRefreshAt: new Date().toISOString(),
+        },
+      },
+    });
+  }
+
+  revokeSession(
+    sessionId: string,
+    data: {
+      isRevoked: boolean;
+      revokedAt: Date;
+      revocationReason: string;
+      status: string;
+    },
+  ) {
+    return this.prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        isRevoked: data.isRevoked,
+        revokedAt: data.revokedAt,
+        revocationReason: data.revocationReason,
+        status: data.status as never,
+      },
+    });
+  }
+
   // ─── Email Verification ────────────────────────────
 
   createVerificationToken(data: Prisma.EmailVerificationTokenCreateInput) {

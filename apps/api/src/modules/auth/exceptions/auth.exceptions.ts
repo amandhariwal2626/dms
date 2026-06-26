@@ -133,3 +133,21 @@ export class TooManyAttemptsException extends HttpException {
     super({ status: 'error', message, code: 'TOO_MANY_ATTEMPTS' }, HttpStatus.TOO_MANY_REQUESTS);
   }
 }
+
+export class ReplayAttackException extends HttpException {
+  constructor(message = 'Refresh token reuse detected. Session has been revoked') {
+    super({ status: 'error', message, code: 'REPLAY_ATTACK' }, HttpStatus.UNAUTHORIZED);
+  }
+}
+
+export class SessionRevokedException extends HttpException {
+  constructor(message = 'Session has been revoked. Please login again') {
+    super({ status: 'error', message, code: 'SESSION_REVOKED' }, HttpStatus.UNAUTHORIZED);
+  }
+}
+
+export class ValidationFailedException extends HttpException {
+  constructor(message = 'Validation failed') {
+    super({ status: 'error', message, code: 'VALIDATION_FAILED' }, HttpStatus.BAD_REQUEST);
+  }
+}
