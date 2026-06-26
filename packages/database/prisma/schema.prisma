@@ -292,6 +292,58 @@ enum Division {
   @@map("division")
 }
 
+/// Category of device used for authentication
+enum DeviceType {
+  MOBILE
+  TABLET
+  DESKTOP
+  LAPTOP
+  SMART_TV
+  KIOSK
+  OTHER
+
+  @@map("device_type")
+}
+
+/// Software platform of the client application
+enum Platform {
+  WEB
+  ANDROID
+  IOS
+  WINDOWS
+  MACOS
+  LINUX
+  API
+
+  @@map("platform")
+}
+
+/// Current lifecycle state of a user session
+enum SessionStatus {
+  ACTIVE
+  EXPIRED
+  LOGGED_OUT
+  REVOKED
+  IDLE_TIMEOUT
+
+  @@map("session_status")
+}
+
+/// Reason why a session was terminated
+enum LogoutReason {
+  USER_LOGOUT
+  SESSION_EXPIRED
+  DEVICE_REVOKED
+  ADMIN_REVOKED
+  PASSWORD_CHANGED
+  IDLE_TIMEOUT
+  MAX_SESSIONS_REACHED
+  SUSPICIOUS_ACTIVITY
+  OTHER
+
+  @@map("logout_reason")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -643,8 +695,8 @@ model User {
 
   // ─── Relations ─────────────────────────────────
   companyUsers CompanyUser[]
+  sessions     Session[]
   // UserRole                 UserRole[]
-  // Session                  Session[]
   // PasswordResetToken       PasswordResetToken[]
   // EmailVerificationToken   EmailVerificationToken[]
   // AuditLog                 AuditLog[]
@@ -805,4 +857,107 @@ model CompanyUser {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("company_users")
+}
+
+/// Represents an authenticated user session across devices.
+/// Sessions are independent of company context — company selection happens post-auth.
+model Session {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  /// Reference to the authenticated user
+  userId String @map("user_id")
+
+  // ─── Authentication ────────────────────────────
+  /// Unique identifier of the access JWT (for revocation)
+  accessTokenId      String  @unique @map("access_token_id")
+  /// Hashed refresh token stored server-side
+  refreshTokenHash   String  @map("refresh_token_hash")
+  /// Snapshot of the user's refreshTokenVersion at session creation
+  refreshTokenVersion Int    @default(0) @map("refresh_token_version")
+  /// Unique JWT ID (jti claim) for this session
+  jwtId              String  @unique @map("jwt_id")
+
+  // ─── Device Information ────────────────────────
+  deviceId        String?    @map("device_id")
+  deviceName      String?    @map("device_name")
+  deviceType      DeviceType? @map("device_type")
+  operatingSystem String?    @map("operating_system")
+  osVersion       String?    @map("os_version")
+  browser         String?    @map("browser")
+  browserVersion  String?    @map("browser_version")
+  appVersion      String?    @map("app_version")
+  platform        Platform?  @map("platform")
+
+  // ─── Network Information ───────────────────────
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  country   String? @map("country")
+  state     String? @map("state")
+  city      String? @map("city")
+  latitude  Float?  @map("latitude")
+  longitude Float?  @map("longitude")
+  /// Timezone of the client at login time
+  timezone  String? @map("timezone")
+
+  // ─── Login Information ─────────────────────────
+  loginAt        DateTime      @default(now()) @map("login_at")
+  lastActivityAt DateTime      @default(now()) @map("last_activity_at")
+  expiresAt      DateTime?     @map("expires_at")
+  loggedOutAt    DateTime?     @map("logged_out_at")
+  logoutReason   LogoutReason? @map("logout_reason")
+
+  // ─── Security ──────────────────────────────────
+  isCurrentSession Boolean @default(false) @map("is_current_session")
+  isTrustedDevice  Boolean @default(false) @map("is_trusted_device")
+  rememberMe       Boolean @default(false) @map("remember_me")
+  mfaVerified      Boolean @default(false) @map("mfa_verified")
+  /// Numeric risk score (0–100) from security analysis
+  riskScore        Int?    @map("risk_score")
+  isRevoked        Boolean @default(false) @map("is_revoked")
+  revokedAt        DateTime? @map("revoked_at")
+  revokedBy        String?   @map("revoked_by")
+  revocationReason String?   @map("revocation_reason")
+
+  // ─── Status ────────────────────────────────────
+  status SessionStatus @default(ACTIVE) @map("status")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  user User @relation(fields: [userId], references: [id])
+
+  // AuditLog       AuditLog[]
+  // LoginHistory   LoginHistory[]
+  // Notification   Notification[]
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([userId])
+  @@index([deviceId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([loginAt])
+  @@index([lastActivityAt])
+  @@index([isRevoked])
+  @@index([isDeleted])
+  @@index([ipAddress])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("sessions")
 }
