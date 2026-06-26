@@ -67,5 +67,6 @@ export const EVENT_NAMES = {
   PASSWORD_RESET_REQUESTED: 'auth.password.reset_requested',
   PASSWORD_CHANGED: 'auth.password.changed',
   EMAIL_VERIFIED: 'auth.email.verified',
+  COMPANY_SELECTED: 'auth.company.selected',
   COMPANY_SWITCHED: 'auth.company.switched',
 } as const;

@@ -98,6 +98,18 @@ export class UserNotFoundException extends HttpException {
   }
 }
 
+export class InactiveCompanyException extends HttpException {
+  constructor(message = 'Company is not active') {
+    super({ status: 'error', message, code: 'INACTIVE_COMPANY' }, HttpStatus.FORBIDDEN);
+  }
+}
+
+export class InactiveCompanyUserException extends HttpException {
+  constructor(message = 'Company membership is not active') {
+    super({ status: 'error', message, code: 'INACTIVE_COMPANY_USER' }, HttpStatus.FORBIDDEN);
+  }
+}
+
 export class InactiveUserException extends HttpException {
   constructor(message = 'Account is not active. Please contact support') {
     super({ status: 'error', message, code: 'INACTIVE_USER' }, HttpStatus.FORBIDDEN);

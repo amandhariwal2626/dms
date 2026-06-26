@@ -20,10 +20,21 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   validate(payload: AccessTokenPayload): AuthenticatedUser {
-    return {
+    const user: AuthenticatedUser = {
       id: payload.sub,
       isEmailVerified: true,
       isActive: true,
+      sessionId: payload.sessionId,
     };
+
+    if (payload.companyId !== undefined) {
+      user.companyId = payload.companyId;
+    }
+
+    if (payload.companyUserId !== undefined) {
+      user.companyUserId = payload.companyUserId;
+    }
+
+    return user;
   }
 }

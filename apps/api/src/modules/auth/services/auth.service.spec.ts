@@ -17,6 +17,9 @@ import {
   EmailNotVerifiedException,
   AccountLockedException,
   InactiveUserException,
+  CompanyAccessDeniedException,
+  InactiveCompanyException,
+  InactiveCompanyUserException,
 } from '../exceptions/auth.exceptions';
 
 describe('AuthService', () => {
@@ -111,6 +114,10 @@ describe('AuthService', () => {
             resetFailedAttempts: jest.fn(),
             incrementFailedAttempts: jest.fn(),
             lockAccount: jest.fn(),
+            findUserCompanies: jest.fn(),
+            findCompanyUser: jest.fn(),
+            updateCompanyUserLastAccessed: jest.fn(),
+            updateSessionCompanyContext: jest.fn(),
             createActivityLog: jest.fn(),
             $transaction: jest.fn(),
           },
@@ -414,6 +421,242 @@ describe('AuthService', () => {
       expect(tokenService.generateTokenPair).toHaveBeenCalled();
       expect(authRepository.createActivityLog).toHaveBeenCalled();
       expect(eventEmitter.emit).toHaveBeenCalled();
+    });
+  });
+
+  describe('getUserCompanies', () => {
+    const mockMembership = {
+      id: 'cm-id',
+      companyId: 'company-id',
+      userId: 'user-id',
+      isDefaultCompany: true,
+      lastCompanyLoginAt: new Date(),
+      company: {
+        id: 'company-id',
+        companyCode: 'CMP000001',
+        legalName: 'Test Company',
+        displayName: 'Test Company Display',
+        logoUrl: null,
+      },
+      userRoles: [
+        {
+          role: { id: 'role-id', name: 'Admin', code: 'ADMIN' },
+        },
+      ],
+    };
+
+    it('should return formatted company list', async () => {
+      authRepository.findUserCompanies.mockResolvedValue([mockMembership] as never);
+
+      const result = await authService.getUserCompanies('user-id');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        companyId: 'company-id',
+        companyCode: 'CMP000001',
+        companyName: 'Test Company',
+        displayName: 'Test Company Display',
+        logo: null,
+        companyUserId: 'cm-id',
+        roles: [{ roleId: 'role-id', name: 'Admin', code: 'ADMIN' }],
+        isDefaultCompany: true,
+        lastAccessedAt: expect.any(Date),
+      });
+    });
+
+    it('should use legalName when displayName is null', async () => {
+      const membershipNoDisplay = {
+        ...mockMembership,
+        company: { ...mockMembership.company, displayName: null },
+      };
+      authRepository.findUserCompanies.mockResolvedValue([membershipNoDisplay] as never);
+
+      const result = await authService.getUserCompanies('user-id');
+
+      expect(result[0].displayName).toBe('Test Company');
+    });
+  });
+
+  describe('selectCompany', () => {
+    const mockCompanyUser = {
+      id: 'cm-id',
+      companyId: 'company-id',
+      userId: 'user-id',
+      status: 'ACTIVE',
+      isActive: true,
+      isDeleted: false,
+      company: {
+        id: 'company-id',
+        companyCode: 'CMP000001',
+        legalName: 'Test Company',
+        displayName: 'Test Company Display',
+        logoUrl: null,
+        status: 'ACTIVE',
+        isDeleted: false,
+      },
+      userRoles: [
+        {
+          role: { id: 'role-id', name: 'Admin', code: 'ADMIN' },
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      tokenService.generateAccessToken.mockResolvedValue('new-access-token');
+      authRepository.updateCompanyUserLastAccessed.mockResolvedValue({} as never);
+      authRepository.updateSessionCompanyContext.mockResolvedValue({} as never);
+      authRepository.createActivityLog.mockResolvedValue({ id: 'log-id' } as never);
+    });
+
+    it('should select company and return new access token', async () => {
+      authRepository.findCompanyUser.mockResolvedValue(mockCompanyUser as never);
+
+      const result = await authService.selectCompany('user-id', 'company-id', 'session-id');
+
+      expect(result.success).toBe(true);
+      expect(result.accessToken).toBe('new-access-token');
+      expect(result.companyId).toBe('company-id');
+      expect(result.companyUserId).toBe('cm-id');
+      expect(result.activeRoleIds).toEqual(['role-id']);
+      expect(authRepository.updateCompanyUserLastAccessed).toHaveBeenCalledWith('cm-id');
+      expect(authRepository.updateSessionCompanyContext).toHaveBeenCalledWith('session-id', {
+        activeCompanyId: 'company-id',
+        activeCompanyUserId: 'cm-id',
+        lastActivityAt: expect.any(Date),
+      });
+      expect(eventEmitter.emit).toHaveBeenCalled();
+      expect(authRepository.createActivityLog).toHaveBeenCalled();
+    });
+
+    it('should throw CompanyAccessDeniedException when user is not in company', async () => {
+      authRepository.findCompanyUser.mockResolvedValue(null);
+
+      await expect(
+        authService.selectCompany('user-id', 'other-company', 'session-id'),
+      ).rejects.toThrow(CompanyAccessDeniedException);
+    });
+
+    it('should throw InactiveCompanyException when company is not active', async () => {
+      const inactiveCompany = {
+        ...mockCompanyUser,
+        company: { ...mockCompanyUser.company, status: 'SUSPENDED' },
+      };
+      authRepository.findCompanyUser.mockResolvedValue(inactiveCompany as never);
+
+      await expect(
+        authService.selectCompany('user-id', 'company-id', 'session-id'),
+      ).rejects.toThrow(InactiveCompanyException);
+    });
+
+    it('should throw InactiveCompanyException when company is deleted', async () => {
+      const deletedCompany = {
+        ...mockCompanyUser,
+        company: { ...mockCompanyUser.company, isDeleted: true },
+      };
+      authRepository.findCompanyUser.mockResolvedValue(deletedCompany as never);
+
+      await expect(
+        authService.selectCompany('user-id', 'company-id', 'session-id'),
+      ).rejects.toThrow(InactiveCompanyException);
+    });
+
+    it('should throw InactiveCompanyUserException when membership is not active', async () => {
+      const inactiveMembership = {
+        ...mockCompanyUser,
+        status: 'SUSPENDED',
+      };
+      authRepository.findCompanyUser.mockResolvedValue(inactiveMembership as never);
+
+      await expect(
+        authService.selectCompany('user-id', 'company-id', 'session-id'),
+      ).rejects.toThrow(InactiveCompanyUserException);
+    });
+  });
+
+  describe('switchCompany', () => {
+    const mockCompanyUser = {
+      id: 'cm-id-2',
+      companyId: 'company-id-2',
+      userId: 'user-id',
+      status: 'ACTIVE',
+      isActive: true,
+      isDeleted: false,
+      company: {
+        id: 'company-id-2',
+        companyCode: 'CMP000002',
+        legalName: 'Second Company',
+        displayName: null,
+        logoUrl: null,
+        status: 'ACTIVE',
+        isDeleted: false,
+      },
+      userRoles: [
+        {
+          role: { id: 'role-id-2', name: 'Manager', code: 'MANAGER' },
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      tokenService.generateAccessToken.mockResolvedValue('new-access-token');
+      tokenService.generateRefreshToken.mockResolvedValue('new-refresh-token');
+      authRepository.updateCompanyUserLastAccessed.mockResolvedValue({} as never);
+      authRepository.updateSessionCompanyContext.mockResolvedValue({} as never);
+      authRepository.createActivityLog.mockResolvedValue({ id: 'log-id' } as never);
+    });
+
+    it('should switch company and return new token pair', async () => {
+      authRepository.findCompanyUser.mockResolvedValue(mockCompanyUser as never);
+
+      const result = await authService.switchCompany(
+        'user-id', 'company-id-2', 'session-id', 'company-id',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.accessToken).toBe('new-access-token');
+      expect(result.refreshToken).toBe('new-refresh-token');
+      expect(result.companyId).toBe('company-id-2');
+      expect(result.companyUserId).toBe('cm-id-2');
+      expect(result.activeRoleIds).toEqual(['role-id-2']);
+      expect(authRepository.updateSessionCompanyContext).toHaveBeenCalledWith('session-id', {
+        activeCompanyId: 'company-id-2',
+        activeCompanyUserId: 'cm-id-2',
+        lastActivityAt: expect.any(Date),
+      });
+      expect(eventEmitter.emit).toHaveBeenCalled();
+      expect(authRepository.createActivityLog).toHaveBeenCalled();
+    });
+
+    it('should throw CompanyAccessDeniedException when user not in target company', async () => {
+      authRepository.findCompanyUser.mockResolvedValue(null);
+
+      await expect(
+        authService.switchCompany('user-id', 'other-company', 'session-id', 'company-id'),
+      ).rejects.toThrow(CompanyAccessDeniedException);
+    });
+
+    it('should throw InactiveCompanyException when target company is not active', async () => {
+      const inactiveCompany = {
+        ...mockCompanyUser,
+        company: { ...mockCompanyUser.company, status: 'SUSPENDED' },
+      };
+      authRepository.findCompanyUser.mockResolvedValue(inactiveCompany as never);
+
+      await expect(
+        authService.switchCompany('user-id', 'company-id-2', 'session-id', 'company-id'),
+      ).rejects.toThrow(InactiveCompanyException);
+    });
+
+    it('should throw InactiveCompanyUserException when membership is inactive', async () => {
+      const inactiveMembership = {
+        ...mockCompanyUser,
+        isActive: false,
+      };
+      authRepository.findCompanyUser.mockResolvedValue(inactiveMembership as never);
+
+      await expect(
+        authService.switchCompany('user-id', 'company-id-2', 'session-id', 'company-id'),
+      ).rejects.toThrow(InactiveCompanyUserException);
     });
   });
 });

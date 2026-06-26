@@ -18,9 +18,17 @@ import {
   EmailNotVerifiedException,
   AccountLockedException,
   InactiveUserException,
+  CompanyAccessDeniedException,
+  InactiveCompanyException,
+  InactiveCompanyUserException,
 } from '../exceptions/auth.exceptions';
 import { normalizeEmail, normalizeUsername } from '../utils/auth.util';
-import { UserRegisteredEvent, UserLoggedInEvent } from '../events/auth.events';
+import {
+  UserRegisteredEvent,
+  UserLoggedInEvent,
+  CompanySelectedEvent,
+  CompanySwitchedEvent,
+} from '../events/auth.events';
 import { createDefaultCompanySettings } from '../utils/company-settings.util';
 import { LOGIN_CONSTANTS } from '../constants/auth.constants';
 import { addMinutes, parseExpiry } from '../utils/date.util';
@@ -398,6 +406,199 @@ export class AuthService {
       companies,
       defaultCompany,
       requiresCompanySelection: companies.length > 1,
+    };
+  }
+
+  async getUserCompanies(userId: string) {
+    this.logger.log(`Fetching companies for user ${userId}`);
+
+    const memberships = await this.authRepository.findUserCompanies(userId);
+
+    return memberships.map((m) => ({
+      companyId: m.company.id,
+      companyCode: m.company.companyCode,
+      companyName: m.company.legalName,
+      displayName: m.company.displayName || m.company.legalName,
+      logo: m.company.logoUrl,
+      companyUserId: m.id,
+      roles: m.userRoles.map((ur) => ({
+        roleId: ur.role.id,
+        name: ur.role.name,
+        code: ur.role.code,
+      })),
+      isDefaultCompany: m.isDefaultCompany,
+      lastAccessedAt: m.lastCompanyLoginAt,
+    }));
+  }
+
+  async selectCompany(userId: string, companyId: string, sessionId: string) {
+    this.logger.log(`Company selection: user ${userId} selecting company ${companyId}`);
+
+    const companyUser = await this.authRepository.findCompanyUser(companyId, userId);
+
+    if (!companyUser) {
+      this.logger.warn(`Company selection failed: user ${userId} not in company ${companyId}`);
+      throw new CompanyAccessDeniedException();
+    }
+
+    if (companyUser.company.status !== 'ACTIVE' || companyUser.company.isDeleted) {
+      this.logger.warn(`Company selection failed: company ${companyId} is not active`);
+      throw new InactiveCompanyException();
+    }
+
+    if (
+      companyUser.status !== 'ACTIVE' ||
+      !companyUser.isActive ||
+      companyUser.isDeleted
+    ) {
+      this.logger.warn(
+        `Company selection failed: membership ${companyUser.id} is not active`,
+      );
+      throw new InactiveCompanyUserException();
+    }
+
+    await this.authRepository.updateCompanyUserLastAccessed(companyUser.id);
+
+    const activeRoleIds = companyUser.userRoles.map((ur) => ur.role.id);
+
+    const newAccessToken = await this.tokenService.generateAccessToken({
+      userId,
+      sessionId,
+      tokenVersion: 0,
+      companyId,
+      companyUserId: companyUser.id,
+    });
+
+    const expiresIn = Math.floor(
+      parseExpiry(this.jwtConfigService.accessToken.expiresIn) / 1000,
+    );
+
+    await this.authRepository.updateSessionCompanyContext(sessionId, {
+      activeCompanyId: companyId,
+      activeCompanyUserId: companyUser.id,
+      lastActivityAt: new Date(),
+    });
+
+    this.eventEmitter.emit(
+      CompanySelectedEvent.eventName,
+      new CompanySelectedEvent(userId, companyId, sessionId),
+    );
+
+    await this.authRepository.createActivityLog({
+      company: { connect: { id: companyId } },
+      user: { connect: { id: userId } },
+      companyUser: { connect: { id: companyUser.id } },
+      title: 'Company Selected',
+      activityType: 'LOGIN',
+      module: 'AUTH',
+      entityName: 'Company',
+      entityId: companyId,
+      performedAt: new Date(),
+    });
+
+    this.logger.log(`Company selected: user ${userId} -> company ${companyId}`);
+
+    return {
+      success: true as const,
+      message: 'Company selected successfully',
+      accessToken: newAccessToken,
+      expiresIn,
+      companyId,
+      companyUserId: companyUser.id,
+      activeRoleIds,
+    };
+  }
+
+  async switchCompany(
+    userId: string,
+    companyId: string,
+    sessionId: string,
+    currentCompanyId: string,
+  ) {
+    this.logger.log(
+      `Company switch: user ${userId} switching from ${currentCompanyId} to ${companyId}`,
+    );
+
+    const companyUser = await this.authRepository.findCompanyUser(companyId, userId);
+
+    if (!companyUser) {
+      this.logger.warn(`Company switch failed: user ${userId} not in company ${companyId}`);
+      throw new CompanyAccessDeniedException();
+    }
+
+    if (companyUser.company.status !== 'ACTIVE' || companyUser.company.isDeleted) {
+      this.logger.warn(`Company switch failed: target company ${companyId} is not active`);
+      throw new InactiveCompanyException();
+    }
+
+    if (
+      companyUser.status !== 'ACTIVE' ||
+      !companyUser.isActive ||
+      companyUser.isDeleted
+    ) {
+      this.logger.warn(
+        `Company switch failed: membership ${companyUser.id} is not active`,
+      );
+      throw new InactiveCompanyUserException();
+    }
+
+    await this.authRepository.updateCompanyUserLastAccessed(companyUser.id);
+
+    const newRefreshToken = await this.tokenService.generateRefreshToken({
+      userId,
+      sessionId,
+      refreshTokenVersion: 0,
+    });
+
+    const newAccessToken = await this.tokenService.generateAccessToken({
+      userId,
+      sessionId,
+      tokenVersion: 0,
+      companyId,
+      companyUserId: companyUser.id,
+    });
+
+    const accessExpiryMs = parseExpiry(this.jwtConfigService.accessToken.expiresIn);
+    const expiresIn = Math.floor(accessExpiryMs / 1000);
+
+    const activeRoleIds = companyUser.userRoles.map((ur) => ur.role.id);
+
+    await this.authRepository.updateSessionCompanyContext(sessionId, {
+      activeCompanyId: companyId,
+      activeCompanyUserId: companyUser.id,
+      lastActivityAt: new Date(),
+    });
+
+    this.eventEmitter.emit(
+      CompanySwitchedEvent.eventName,
+      new CompanySwitchedEvent(userId, currentCompanyId, companyId),
+    );
+
+    await this.authRepository.createActivityLog({
+      company: { connect: { id: companyId } },
+      user: { connect: { id: userId } },
+      companyUser: { connect: { id: companyUser.id } },
+      title: 'Company Switched',
+      activityType: 'LOGIN',
+      module: 'AUTH',
+      entityName: 'Company',
+      entityId: companyId,
+      performedAt: new Date(),
+    });
+
+    this.logger.log(
+      `Company switched: user ${userId} from ${currentCompanyId} to ${companyId}`,
+    );
+
+    return {
+      success: true as const,
+      message: 'Company switched successfully',
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      expiresIn,
+      companyId,
+      companyUserId: companyUser.id,
+      activeRoleIds,
     };
   }
 

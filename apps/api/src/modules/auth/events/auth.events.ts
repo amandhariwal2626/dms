@@ -46,6 +46,15 @@ export class EmailVerifiedEvent {
   ) {}
 }
 
+export class CompanySelectedEvent {
+  static readonly eventName = EVENT_NAMES.COMPANY_SELECTED;
+  constructor(
+    public readonly userId: string,
+    public readonly companyId: string,
+    public readonly sessionId: string,
+  ) {}
+}
+
 export class CompanySwitchedEvent {
   static readonly eventName = EVENT_NAMES.COMPANY_SWITCHED;
   constructor(
