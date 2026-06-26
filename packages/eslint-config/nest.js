@@ -12,7 +12,7 @@ export default [
       },
     },
     rules: {
-      '@typescript-eslint/no-extraneous-class': 'off'
+      '@typescript-eslint/no-extraneous-class': 'off',
     },
   },
 ];

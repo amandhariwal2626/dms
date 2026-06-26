@@ -5,7 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 
-export function AppProviders({ children }: { readonly children: React.ReactNode }): React.JSX.Element {
+export function AppProviders({
+  children,
+}: {
+  readonly children: React.ReactNode;
+}): React.JSX.Element {
   const [queryClient] = React.useState(
     () =>
       new QueryClient({

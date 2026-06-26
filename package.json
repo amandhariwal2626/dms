@@ -2,6 +2,7 @@
   "name": "dms-monorepo",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "turbo dev --filter=@repo/web --filter=@repo/api",

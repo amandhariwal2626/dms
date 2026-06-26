@@ -12,7 +12,9 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['*.config.js', '*.config.mjs', 'eslint.config.js'],
+        },
         tsconfigRootDir: process.cwd(),
       },
       globals: {
@@ -23,7 +25,7 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
-      '@typescript-eslint/no-unnecessary-condition': 'warn'
+      '@typescript-eslint/no-unnecessary-condition': 'warn',
     },
   },
   prettier,
