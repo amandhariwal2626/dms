@@ -9,6 +9,8 @@ export interface GenerateAccessTokenPayload {
   userId: string;
   sessionId: string;
   tokenVersion: number;
+  companyId?: string;
+  companyUserId?: string;
 }
 
 export interface GenerateRefreshTokenPayload {
@@ -22,6 +24,8 @@ export interface GenerateTokenPairPayload {
   sessionId: string;
   tokenVersion: number;
   refreshTokenVersion: number;
+  companyId?: string;
+  companyUserId?: string;
 }
 
 @Injectable()
@@ -41,6 +45,14 @@ export class TokenService {
       sessionId: payload.sessionId,
       tokenVersion: payload.tokenVersion,
     };
+
+    if (payload.companyId) {
+      tokenPayload.companyId = payload.companyId;
+    }
+
+    if (payload.companyUserId) {
+      tokenPayload.companyUserId = payload.companyUserId;
+    }
 
     const expiresInSeconds = Math.floor(parseExpiry(config.expiresIn) / 1000);
 
@@ -129,6 +141,8 @@ export class TokenService {
         userId: payload.userId,
         sessionId: payload.sessionId,
         tokenVersion: payload.tokenVersion,
+        ...(payload.companyId !== undefined ? { companyId: payload.companyId } : {}),
+        ...(payload.companyUserId !== undefined ? { companyUserId: payload.companyUserId } : {}),
       }),
       this.generateRefreshToken({
         userId: payload.userId,

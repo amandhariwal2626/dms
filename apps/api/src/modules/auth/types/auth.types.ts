@@ -3,6 +3,8 @@ import type { Request } from 'express';
 export interface AccessTokenPayload {
   sub: string;
   sessionId: string;
+  companyId?: string;
+  companyUserId?: string;
   tokenVersion: number;
   iat: number;
   exp: number;
@@ -27,6 +29,9 @@ export interface AuthenticatedUser {
   email?: string;
   isEmailVerified: boolean;
   isActive: boolean;
+  sessionId?: string;
+  companyId?: string;
+  companyUserId?: string;
 }
 
 export interface SessionContext {
@@ -41,9 +46,9 @@ export interface SessionContext {
 
 export interface CompanyContext {
   companyId: string;
-  isPrimary: boolean;
-  roleIds: string[];
-  permissions: string[];
+  companyUserId: string;
+  activeRoleIds: string[];
+  selectedAt: Date;
 }
 
 export interface DeviceInfo {

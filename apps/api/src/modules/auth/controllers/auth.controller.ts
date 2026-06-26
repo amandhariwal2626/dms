@@ -1,7 +1,15 @@
-import { Body, Controller, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import type { Request } from 'express';
 import { AuthService } from '../services/auth.service';
 import { EmailVerificationService } from '../services/email-verification.service';
-import { RegisterDto, LoginDto, SendVerificationDto, VerifyEmailDto } from '../dto/auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  SendVerificationDto,
+  VerifyEmailDto,
+  SwitchCompanyDto,
+} from '../dto/auth.dto';
 import type { VerificationPurpose } from '@prisma/client';
 
 @Controller('auth')
@@ -50,5 +58,31 @@ export class AuthController {
       otp: dto.otp,
       purpose: 'REGISTER',
     });
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('companies')
+  async getCompanies(@Req() req: Request) {
+    const user = req.user as { id: string; sessionId?: string; companyId?: string };
+    return this.authService.getUserCompanies(user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('company/select')
+  async selectCompany(@Req() req: Request, @Body() dto: SwitchCompanyDto) {
+    const user = req.user as { id: string; sessionId?: string; companyId?: string };
+    return this.authService.selectCompany(user.id, dto.companyId, user.sessionId ?? '');
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('company/switch')
+  async switchCompany(@Req() req: Request, @Body() dto: SwitchCompanyDto) {
+    const user = req.user as { id: string; sessionId?: string; companyId?: string };
+    return this.authService.switchCompany(
+      user.id,
+      dto.companyId,
+      user.sessionId ?? '',
+      user.companyId ?? '',
+    );
   }
 }

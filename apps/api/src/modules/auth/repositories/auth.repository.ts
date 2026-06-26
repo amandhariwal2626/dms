@@ -148,6 +148,126 @@ export class AuthRepository {
     });
   }
 
+  // ─── Company Selection ─────────────────────────────
+
+  findCompanyById(companyId: string) {
+    return this.prisma.company.findUnique({ where: { id: companyId } });
+  }
+
+  findActiveCompanyById(companyId: string) {
+    return this.prisma.company.findFirst({
+      where: {
+        id: companyId,
+        isDeleted: false,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  findCompanyUser(companyId: string, userId: string) {
+    return this.prisma.companyUser.findFirst({
+      where: {
+        companyId,
+        userId,
+        isDeleted: false,
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            companyCode: true,
+            legalName: true,
+            displayName: true,
+            logoUrl: true,
+            status: true,
+            isDeleted: true,
+          },
+        },
+        userRoles: {
+          include: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  findUserCompanies(userId: string) {
+    return this.prisma.companyUser.findMany({
+      where: {
+        userId,
+        isActive: true,
+        isDeleted: false,
+        status: 'ACTIVE',
+        company: {
+          isDeleted: false,
+          status: 'ACTIVE',
+        },
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            companyCode: true,
+            legalName: true,
+            displayName: true,
+            logoUrl: true,
+          },
+        },
+        userRoles: {
+          include: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { isDefaultCompany: 'desc' },
+        { lastCompanyLoginAt: { sort: 'desc', nulls: 'last' } },
+      ],
+    });
+  }
+
+  updateCompanyUserLastAccessed(companyUserId: string) {
+    return this.prisma.companyUser.update({
+      where: { id: companyUserId },
+      data: { lastCompanyLoginAt: new Date() },
+    });
+  }
+
+  updateSessionCompanyContext(
+    sessionId: string,
+    data: {
+      activeCompanyId: string;
+      activeCompanyUserId: string;
+      lastActivityAt: Date;
+    },
+  ) {
+    const now = new Date();
+    return this.prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        lastActivityAt: data.lastActivityAt,
+        metadata: {
+          activeCompanyId: data.activeCompanyId,
+          activeCompanyUserId: data.activeCompanyUserId,
+          lastCompanySwitchAt: now.toISOString(),
+        },
+      },
+    });
+  }
+
   // ─── Email Verification ────────────────────────────
 
   createVerificationToken(data: Prisma.EmailVerificationTokenCreateInput) {
