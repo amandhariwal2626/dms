@@ -128,6 +128,37 @@ enum Language {
   @@map("language")
 }
 
+/// Purpose of the email verification
+enum VerificationPurpose {
+  REGISTER
+  LOGIN
+  CHANGE_EMAIL
+  RESET_PASSWORD
+  INVITE
+
+  @@map("verification_purpose")
+}
+
+/// Method of verification delivery
+enum VerificationTokenType {
+  OTP
+  MAGIC_LINK
+  EMAIL_LINK
+
+  @@map("verification_token_type")
+}
+
+/// Current lifecycle state of a verification record
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  FAILED
+  BLOCKED
+
+  @@map("verification_status")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -284,4 +315,103 @@ model Company {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("companies")
+}
+
+/// Stores email verification tokens and OTPs for self-onboarding and authentication flows.
+/// At least one of `otp` or `token` must be present (enforced at application layer).
+model EmailVerificationToken {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Identity ──────────────────────────────────
+  /// Email address being verified
+  email   String   @map("email")
+  /// Hashed verification token (nullable — use OTP instead)
+  token   String?  @map("token")
+  /// One-time password (nullable — use token instead)
+  otp     String?  @map("otp")
+
+  // ─── Purpose & Type ────────────────────────────
+  /// Why this verification was created
+  purpose   VerificationPurpose   @map("purpose")
+  /// How the verification is delivered
+  tokenType VerificationTokenType @map("token_type")
+
+  // ─── Expiry & Verification ─────────────────────
+  /// When this token/OTP expires
+  expiresAt    DateTime? @map("expires_at")
+  /// When the user successfully verified (null if not yet verified)
+  verifiedAt   DateTime? @map("verified_at")
+
+  // ─── Attempt Tracking ──────────────────────────
+  /// Number of verification attempts made
+  attemptCount Int      @default(0) @map("attempt_count")
+  /// Maximum allowed verification attempts before blocking
+  maxAttempts  Int      @default(5) @map("max_attempts")
+  /// Number of times the OTP/token was resent
+  resendCount  Int      @default(0) @map("resend_count")
+  /// Last time a resend occurred
+  lastResendAt DateTime? @map("last_resend_at")
+
+  // ─── Request Metadata ──────────────────────────
+  /// IP address of the requester
+  ipAddress String? @map("ip_address")
+  /// User-Agent header from the request
+  userAgent String? @map("user_agent")
+  /// Unique device identifier
+  deviceId  String? @map("device_id")
+  /// Browser name (parsed from user-agent)
+  browser   String? @map("browser")
+  /// Operating system (parsed from user-agent)
+  platform  String? @map("platform")
+
+  // ─── Geo Location ──────────────────────────────
+  country String? @map("country")
+  state   String? @map("state")
+  city    String? @map("city")
+
+  // ─── Failure Tracking ──────────────────────────
+  /// Reason for the last failure (e.g., "Invalid OTP", "Expired token")
+  failureReason String? @map("failure_reason")
+
+  // ─── Status ────────────────────────────────────
+  status VerificationStatus @default(PENDING) @map("status")
+  /// Whether this verification record has been consumed
+  isUsed  Boolean   @default(false) @map("is_used")
+  /// When the record was consumed
+  usedAt  DateTime? @map("used_at")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Constraints ───────────────────────────────
+  /// Only one active verification per email + purpose combination
+  @@unique([email, purpose, isUsed, isDeleted])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([email])
+  @@index([otp])
+  @@index([token])
+  @@index([purpose])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@index([isDeleted])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("email_verification_tokens")
 }
