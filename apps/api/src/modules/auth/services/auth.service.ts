@@ -84,8 +84,8 @@ export class AuthService {
           data: {
             email: normalizedEmail,
             normalizedEmail,
-            username: (normalizedEmail.split('@')[0] ?? normalizedEmail),
-            normalizedUsername: (normalizedEmail.split('@')[0] ?? normalizedEmail),
+            username: normalizedEmail.split('@')[0] ?? normalizedEmail,
+            normalizedUsername: normalizedEmail.split('@')[0] ?? normalizedEmail,
             firstName: dto.firstName,
             lastName: dto.lastName ?? null,
             mobileNumber: dto.mobileNumber,

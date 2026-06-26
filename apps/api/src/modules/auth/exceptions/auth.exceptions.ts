@@ -53,3 +53,41 @@ export class PermissionDeniedException extends HttpException {
     super({ status: 'error', message, code: 'PERMISSION_DENIED' }, HttpStatus.FORBIDDEN);
   }
 }
+
+export class DuplicateEmailException extends HttpException {
+  constructor(message = 'Email is already registered') {
+    super({ status: 'error', message, code: 'DUPLICATE_EMAIL' }, HttpStatus.CONFLICT);
+  }
+}
+
+export class DuplicateCompanyException extends HttpException {
+  constructor(message = 'Company name is already registered') {
+    super({ status: 'error', message, code: 'DUPLICATE_COMPANY' }, HttpStatus.CONFLICT);
+  }
+}
+
+export class WeakPasswordException extends HttpException {
+  constructor(errors: string[]) {
+    super(
+      {
+        status: 'error',
+        message: 'Password does not meet strength requirements',
+        errors,
+        code: 'WEAK_PASSWORD',
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+
+export class TermsNotAcceptedException extends HttpException {
+  constructor(message = 'You must accept the terms and conditions') {
+    super({ status: 'error', message, code: 'TERMS_NOT_ACCEPTED' }, HttpStatus.BAD_REQUEST);
+  }
+}
+
+export class PasswordMismatchException extends HttpException {
+  constructor(message = 'Passwords do not match') {
+    super({ status: 'error', message, code: 'PASSWORD_MISMATCH' }, HttpStatus.BAD_REQUEST);
+  }
+}

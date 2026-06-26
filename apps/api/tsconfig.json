@@ -3,6 +3,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "./dist",
+    "types": ["jest", "node"],
     "paths": {
       "@/*": ["./src/*"]
     }
