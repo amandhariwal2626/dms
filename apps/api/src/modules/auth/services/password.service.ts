@@ -48,9 +48,7 @@ export class PasswordService {
 
     const remaining = Array.from({ length: length - 4 }, () => randomChar(all));
 
-    const password = [...required, ...remaining]
-      .sort(() => Math.random() - 0.5)
-      .join('');
+    const password = [...required, ...remaining].sort(() => Math.random() - 0.5).join('');
 
     return password;
   }

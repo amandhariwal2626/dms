@@ -10,9 +10,7 @@ export interface JwtTokenConfig {
 
 @Injectable()
 export class JwtConfigService {
-  constructor(
-    private readonly configService: ConfigService<EnvironmentVariables, true>,
-  ) {}
+  constructor(private readonly configService: ConfigService<EnvironmentVariables, true>) {}
 
   get accessToken(): JwtTokenConfig {
     return {

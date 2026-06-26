@@ -44,16 +44,13 @@ export class TokenService {
 
     const expiresInSeconds = Math.floor(parseExpiry(config.expiresIn) / 1000);
 
-    return this.jwtService.signAsync(
-      tokenPayload,
-      {
-        secret: config.secret,
-        expiresIn: expiresInSeconds,
-        algorithm: config.algorithm,
-        issuer: this.jwtConfigService.issuer,
-        audience: this.jwtConfigService.audience,
-      },
-    );
+    return this.jwtService.signAsync(tokenPayload, {
+      secret: config.secret,
+      expiresIn: expiresInSeconds,
+      algorithm: config.algorithm,
+      issuer: this.jwtConfigService.issuer,
+      audience: this.jwtConfigService.audience,
+    });
   }
 
   async generateRefreshToken(payload: GenerateRefreshTokenPayload): Promise<string> {
@@ -67,16 +64,13 @@ export class TokenService {
 
     const expiresInSeconds = Math.floor(parseExpiry(config.expiresIn) / 1000);
 
-    return this.jwtService.signAsync(
-      tokenPayload,
-      {
-        secret: config.secret,
-        expiresIn: expiresInSeconds,
-        algorithm: config.algorithm,
-        issuer: this.jwtConfigService.issuer,
-        audience: this.jwtConfigService.audience,
-      },
-    );
+    return this.jwtService.signAsync(tokenPayload, {
+      secret: config.secret,
+      expiresIn: expiresInSeconds,
+      algorithm: config.algorithm,
+      issuer: this.jwtConfigService.issuer,
+      audience: this.jwtConfigService.audience,
+    });
   }
 
   async verifyAccessToken(token: string): Promise<AccessTokenPayload> {
