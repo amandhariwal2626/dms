@@ -6,3 +6,282 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ──────────────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────────────
+
+/// Legal structure of the business entity
+enum BusinessType {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  LIMITED_LIABILITY_PARTNERSHIP
+  PRIVATE_LIMITED
+  PUBLIC_LIMITED
+  ONE_PERSON_COMPANY
+  NON_PROFIT
+  GOVERNMENT_UNDERTAKING
+  OTHER
+
+  @@map("business_type")
+}
+
+/// Classification category of the company
+enum CompanyCategory {
+  MANUFACTURER
+  DISTRIBUTOR
+  WHOLESALER
+  RETAILER
+  SUPPLIER
+  SERVICE_PROVIDER
+  BROKER
+  AGENT
+  OTHER
+
+  @@map("company_category")
+}
+
+/// Subscription plan tiers
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  GROWTH
+  PROFESSIONAL
+  ENTERPRISE
+  CUSTOM
+
+  @@map("subscription_plan")
+}
+
+/// Current status of the subscription
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  CANCELLED
+  SUSPENDED
+  TRIAL
+  PAST_DUE
+
+  @@map("subscription_status")
+}
+
+/// Lifecycle status of the company record
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DISABLED
+  ARCHIVED
+  PENDING_VERIFICATION
+  REJECTED
+
+  @@map("company_status")
+}
+
+/// Supported currency codes
+enum Currency {
+  INR
+  USD
+  EUR
+  GBP
+  AED
+  SGD
+  AUD
+  CAD
+
+  @@map("currency")
+}
+
+/// Supported timezone identifiers
+enum Timezone {
+  UTC
+  ASIA_KOLKATA
+  ASIA_DUBAI
+  ASIA_SINGAPORE
+  AMERICA_NEW_YORK
+  AMERICA_CHICAGO
+  AMERICA_DENVER
+  AMERICA_LOS_ANGELES
+  EUROPE_LONDON
+  EUROPE_BERLIN
+  EUROPE_PARIS
+  AUSTRALIA_SYDNEY
+
+  @@map("timezone")
+}
+
+/// Supported interface languages
+enum Language {
+  EN
+  HI
+  GU
+  MR
+  TA
+  TE
+  KN
+  BN
+  ES
+  FR
+  AR
+
+  @@map("language")
+}
+
+// ──────────────────────────────────────────────
+// MODELS
+// ──────────────────────────────────────────────
+
+/// Represents one tenant in the DMS. Every entity belongs to a company.
+model Company {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Primary Information ───────────────────────
+  /// Auto-generated unique company code (e.g., CMP000001)
+  companyCode            String   @unique @map("company_code")
+  legalName              String   @map("legal_name")
+  displayName            String   @map("display_name")
+  businessType           BusinessType @map("business_type")
+  companyCategory        CompanyCategory @map("company_category")
+  gstNumber              String?  @unique @map("gst_number")
+  panNumber              String?  @unique @map("pan_number")
+  tanNumber              String?  @map("tan_number")
+  cinNumber              String?  @map("cin_number")
+  udyamRegistrationNumber String? @map("udyam_registration_number")
+  fssaiNumber            String?  @map("fssai_number")
+  drugLicenseNumber      String?  @map("drug_license_number")
+  website                String?  @map("website")
+  email                  String?  @unique @map("email")
+  phone                  String?  @map("phone")
+  alternatePhone         String?  @map("alternate_phone")
+  logoUrl                String?  @map("logo_url")
+  description            String?  @map("description")
+
+  // ─── Business Configuration ────────────────────
+  currency               Currency         @default(INR) @map("currency")
+  timezone               Timezone         @default(ASIA_KOLKATA) @map("timezone")
+  dateFormat             String           @default("DD/MM/YYYY") @map("date_format")
+  timeFormat             String           @default("HH:mm") @map("time_format")
+  countryCode            String           @default("+91") @map("country_code")
+  language               Language         @default(EN) @map("language")
+  financialYearStartMonth Int             @default(4) @map("financial_year_start_month")
+  defaultTaxType         String?          @map("default_tax_type")
+  baseCurrency           Currency         @default(INR) @map("base_currency")
+  decimalPrecision       Int              @default(2) @map("decimal_precision")
+  quantityPrecision      Int              @default(2) @map("quantity_precision")
+  pricePrecision         Int              @default(2) @map("price_precision")
+  weightPrecision        Int              @default(2) @map("weight_precision")
+
+  // ─── Address ───────────────────────────────────
+  addressLine1 String?  @map("address_line1")
+  addressLine2 String?  @map("address_line2")
+  landmark     String?  @map("landmark")
+  city         String?  @map("city")
+  district     String?  @map("district")
+  state        String?  @map("state")
+  country      String?  @map("country")
+  postalCode   String?  @map("postal_code")
+  latitude     Float?   @map("latitude")
+  longitude    Float?   @map("longitude")
+
+  // ─── Subscription ──────────────────────────────
+  subscriptionPlan     SubscriptionPlan   @default(FREE) @map("subscription_plan")
+  subscriptionStatus   SubscriptionStatus @default(TRIAL) @map("subscription_status")
+  subscriptionStartDate DateTime?         @map("subscription_start_date")
+  subscriptionEndDate   DateTime?         @map("subscription_end_date")
+  trialEndsAt           DateTime?         @map("trial_ends_at")
+  maxUsers              Int               @default(5) @map("max_users")
+  maxWarehouses         Int               @default(1) @map("max_warehouses")
+  maxProducts           Int               @default(100) @map("max_products")
+  maxRetailers          Int               @default(50) @map("max_retailers")
+  maxDistributors       Int               @default(10) @map("max_distributors")
+  maxSalesmen           Int               @default(10) @map("max_salesmen")
+  maxOrdersPerMonth     Int               @default(500) @map("max_orders_per_month")
+  storageLimitInGB      Int               @default(5) @map("storage_limit_in_gb")
+
+  // ─── Company Settings ──────────────────────────
+  allowNegativeInventory     Boolean @default(false) @map("allow_negative_inventory")
+  enableBatchTracking        Boolean @default(false) @map("enable_batch_tracking")
+  enableExpiryTracking       Boolean @default(false) @map("enable_expiry_tracking")
+  enableSerialNumberTracking Boolean @default(false) @map("enable_serial_number_tracking")
+  enableMultiWarehouse       Boolean @default(false) @map("enable_multi_warehouse")
+  enableMultiCurrency        Boolean @default(false) @map("enable_multi_currency")
+  enableRouteManagement      Boolean @default(false) @map("enable_route_management")
+  enableBeatPlanning         Boolean @default(false) @map("enable_beat_planning")
+  enableAttendance           Boolean @default(false) @map("enable_attendance")
+  enableGeoTracking          Boolean @default(false) @map("enable_geo_tracking")
+  enableSecondarySales       Boolean @default(false) @map("enable_secondary_sales")
+  enablePrimarySales         Boolean @default(false) @map("enable_primary_sales")
+  enablePromotions           Boolean @default(false) @map("enable_promotions")
+  enableLoyaltyProgram       Boolean @default(false) @map("enable_loyalty_program")
+  enablePriceList            Boolean @default(false) @map("enable_price_list")
+  enableSchemeManagement     Boolean @default(false) @map("enable_scheme_management")
+  enablePurchaseModule       Boolean @default(false) @map("enable_purchase_module")
+  enableReturns              Boolean @default(false) @map("enable_returns")
+  enableApprovals            Boolean @default(false) @map("enable_approvals")
+  enableAuditLogs            Boolean @default(false) @map("enable_audit_logs")
+  enableApiAccess            Boolean @default(false) @map("enable_api_access")
+  enableWebhook              Boolean @default(false) @map("enable_webhook")
+
+  // ─── Branding ──────────────────────────────────
+  primaryColor   String? @map("primary_color")
+  secondaryColor String? @map("secondary_color")
+  faviconUrl     String? @map("favicon_url")
+  emailHeaderLogo String? @map("email_header_logo")
+  invoiceLogo    String? @map("invoice_logo")
+
+  // ─── Status ────────────────────────────────────
+  status           CompanyStatus @default(PENDING_VERIFICATION) @map("status")
+  isActive         Boolean       @default(false) @map("is_active")
+  isVerified       Boolean       @default(false) @map("is_verified")
+  verificationDate DateTime?     @map("verification_date")
+  verifiedBy       String?       @map("verified_by")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  // Users        User[]
+  // Warehouses   Warehouse[]
+  // Products     Product[]
+  // Retailers    Retailer[]
+  // Distributors Distributor[]
+  // Salesmen     Salesman[]
+  // Routes       Route[]
+  // Orders       Order[]
+  // Roles        Role[]
+  // Permissions  Permission[]
+  // Masters      Master[]
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyCode])
+  @@index([status])
+  @@index([gstNumber])
+  @@index([legalName])
+  @@index([displayName])
+  @@index([isDeleted])
+  @@index([subscriptionStatus])
+  @@index([businessType])
+  @@index([companyCategory])
+  @@index([city])
+  @@index([state])
+  @@index([createdAt])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("companies")
+}
