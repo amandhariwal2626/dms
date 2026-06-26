@@ -204,6 +204,94 @@ enum VerificationStatus {
   @@map("verification_status")
 }
 
+/// Type of employment contract
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  FREELANCE
+  CONSULTANT
+  PROBATION
+  TRAINEE
+
+  @@map("employment_type")
+}
+
+/// Current employment status within a company
+enum EmploymentStatus {
+  ACTIVE
+  PROBATION
+  NOTICE_PERIOD
+  TERMINATED
+  RESIGNED
+  RETIRED
+  DEPUTATION
+
+  @@map("employment_status")
+}
+
+/// Company-specific lifecycle status of a user membership
+enum CompanyUserStatus {
+  INVITED
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  TERMINATED
+  LEFT
+
+  @@map("company_user_status")
+}
+
+/// Organisational department within a company
+enum Department {
+  ADMIN
+  HR
+  FINANCE
+  IT
+  SALES
+  MARKETING
+  OPERATIONS
+  PURCHASE
+  WAREHOUSE
+  LOGISTICS
+  PRODUCTION
+  QUALITY
+  RND
+  CUSTOMER_SUPPORT
+  LEGAL
+  OTHER
+
+  @@map("department")
+}
+
+/// Strategic business unit classification
+enum BusinessUnit {
+  FMCG
+  PHARMA
+  ELECTRONICS
+  AUTOMOTIVE
+  AGRICULTURE
+  TEXTILE
+  CHEMICAL
+  OTHER
+
+  @@map("business_unit")
+}
+
+/// Operational division within a business unit
+enum Division {
+  DOMESTIC
+  EXPORT
+  WHOLESALE
+  RETAIL
+  ONLINE
+  INSTITUTIONAL
+  OTHER
+
+  @@map("division")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -332,17 +420,17 @@ model Company {
   version Int @default(1) @map("version")
 
   // ─── Relations ─────────────────────────────────
-  // Users        User[]
-  // Warehouses   Warehouse[]
-  // Products     Product[]
-  // Retailers    Retailer[]
-  // Distributors Distributor[]
-  // Salesmen     Salesman[]
-  // Routes       Route[]
-  // Orders       Order[]
-  // Roles        Role[]
-  // Permissions  Permission[]
-  // Masters      Master[]
+  companyUsers CompanyUser[]
+  // Warehouses     Warehouse[]
+  // Products       Product[]
+  // Retailers      Retailer[]
+  // Distributors   Distributor[]
+  // Salesmen       Salesman[]
+  // Routes         Route[]
+  // Orders         Order[]
+  // Roles          Role[]
+  // Permissions    Permission[]
+  // Masters        Master[]
 
   // ─── Indexes ───────────────────────────────────
   @@index([companyCode])
@@ -554,7 +642,7 @@ model User {
   version Int @default(1) @map("version")
 
   // ─── Relations ─────────────────────────────────
-  // UserCompany              UserCompany[]
+  companyUsers CompanyUser[]
   // UserRole                 UserRole[]
   // Session                  Session[]
   // PasswordResetToken       PasswordResetToken[]
@@ -576,4 +664,145 @@ model User {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("users")
+}
+
+/// Associates a user with a company and stores all company-specific employee information.
+/// This is not a simple junction table — it holds role, reporting, and employment data.
+model CompanyUser {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  /// Reference to the company
+  companyId String @map("company_id")
+  /// Reference to the global user
+  userId    String @map("user_id")
+
+  // ─── Employee Information ──────────────────────
+  /// Unique employee code within the company (e.g., EMP000001)
+  employeeCode         String           @map("employee_code")
+  /// Company-specific email address
+  officialEmail        String           @map("official_email")
+  officialMobileNumber String?          @map("official_mobile_number")
+  designation          String?          @map("designation")
+  department           Department?      @map("department")
+  jobTitle             String?          @map("job_title")
+  employmentType       EmploymentType?  @map("employment_type")
+  employmentStatus     EmploymentStatus? @map("employment_status")
+  joiningDate          DateTime?        @map("joining_date")
+  confirmationDate     DateTime?        @map("confirmation_date")
+  relievingDate        DateTime?        @map("relieving_date")
+  experienceInYears    Int?             @map("experience_in_years")
+
+  // ─── Reporting Hierarchy ───────────────────────
+  /// Self-referencing FK to another CompanyUser record (the manager)
+  reportingManagerId   String?  @map("reporting_manager_id")
+  /// Whether this user is a reporting manager for any subordinates
+  isReportingManager   Boolean  @default(false) @map("is_reporting_manager")
+
+  // ─── Company Access ────────────────────────────
+  /// The user's primary company (used for multi-tenant context)
+  isPrimaryCompany Boolean @default(false) @map("is_primary_company")
+  /// Auto-selected on login
+  isDefaultCompany Boolean @default(false) @map("is_default_company")
+  /// Whether the user can switch to this company from another
+  canSwitchCompany Boolean @default(true) @map("can_switch_company")
+
+  // ─── Default Assignments ───────────────────────
+  defaultWarehouseId    String? @map("default_warehouse_id")
+  defaultRouteId        String? @map("default_route_id")
+  defaultBeatId         String? @map("default_beat_id")
+  defaultSalesRegionId  String? @map("default_sales_region_id")
+  defaultPriceListId    String? @map("default_price_list_id")
+
+  // ─── Work Information ──────────────────────────
+  workLocation String?       @map("work_location")
+  costCenter   String?       @map("cost_center")
+  businessUnit BusinessUnit? @map("business_unit")
+  division     Division?     @map("division")
+  salesRegion  String?       @map("sales_region")
+  zone         String?       @map("zone")
+  territory    String?       @map("territory")
+  cluster      String?       @map("cluster")
+
+  // ─── Permissions ───────────────────────────────
+  canApproveOrders   Boolean  @default(false) @map("can_approve_orders")
+  canApproveReturns  Boolean  @default(false) @map("can_approve_returns")
+  canApprovePurchases Boolean @default(false) @map("can_approve_purchases")
+  canApprovePayments Boolean  @default(false) @map("can_approve_payments")
+  /// Maximum monetary value this user can approve
+  approvalLimit      Decimal? @map("approval_limit")
+
+  // ─── Login Status (Company-specific) ───────────
+  lastCompanyLoginAt     DateTime? @map("last_company_login_at")
+  lastCompanyLoginIp     String?   @map("last_company_login_ip")
+  lastCompanyLoginDevice String?   @map("last_company_login_device")
+
+  // ─── Invitation ────────────────────────────────
+  invitedBy             String?   @map("invited_by")
+  invitedAt             DateTime? @map("invited_at")
+  acceptedInvitationAt  DateTime? @map("accepted_invitation_at")
+
+  // ─── Status ────────────────────────────────────
+  status   CompanyUserStatus @default(INVITED) @map("status")
+  isActive Boolean           @default(false)  @map("is_active")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  company          Company      @relation(fields: [companyId], references: [id])
+  user             User         @relation(fields: [userId], references: [id])
+  /// Self-relation: the manager of this user within the company
+  reportingManager CompanyUser? @relation("ReportingHierarchy", fields: [reportingManagerId], references: [id])
+  /// Inverse self-relation: subordinates reporting to this user
+  subordinates     CompanyUser[] @relation("ReportingHierarchy")
+
+  // UserRole              UserRole[]
+  // Attendance            Attendance[]
+  // Leave                 Leave[]
+  // WarehouseAssignment   WarehouseAssignment[]
+  // BeatAssignment        BeatAssignment[]
+  // RouteAssignment       RouteAssignment[]
+  // SalesOrder            SalesOrder[]
+  // ApprovalHistory       ApprovalHistory[]
+  // Notification          Notification[]
+  // AuditLog              AuditLog[]
+
+  // ─── Constraints ───────────────────────────────
+  /// A user can belong only once to a company
+  @@unique([companyId, userId])
+  /// Employee code must be unique within a company
+  @@unique([companyId, employeeCode])
+  /// Official email must be unique within a company
+  @@unique([companyId, officialEmail])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyId])
+  @@index([userId])
+  @@index([employeeCode])
+  @@index([officialEmail])
+  @@index([designation])
+  @@index([department])
+  @@index([status])
+  @@index([reportingManagerId])
+  @@index([isDeleted])
+  @@index([joiningDate])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("company_users")
 }
