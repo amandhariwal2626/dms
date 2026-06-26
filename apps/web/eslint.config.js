@@ -1,3 +1,8 @@
 import nextConfig from '@repo/eslint-config/next';
 
-export default nextConfig;
+export default [
+  {
+    ignores: ['next-env.d.ts', '**/components/ui/**'],
+  },
+  ...nextConfig,
+];

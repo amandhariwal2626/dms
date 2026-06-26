@@ -1,11 +1,9 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "paths": {
-      "@repo/database": ["packages/database/src"],
-      "@repo/shared-types": ["packages/shared-types/src"]
+      "@repo/database": ["./packages/database/src"],
+      "@repo/shared-types": ["./packages/shared-types/src"]
     }
   }
 }
