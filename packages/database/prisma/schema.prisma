@@ -128,6 +128,51 @@ enum Language {
   @@map("language")
 }
 
+/// Biological gender of the user
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+
+  @@map("gender")
+}
+
+/// Marital status of the user
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+  PREFER_NOT_TO_SAY
+
+  @@map("marital_status")
+}
+
+/// Preferred channel for sending communications to the user
+enum PreferredCommunicationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH_NOTIFICATION
+  IN_APP
+
+  @@map("preferred_communication_channel")
+}
+
+/// Lifecycle status of a user account
+enum UserStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  LOCKED
+  SUSPENDED
+  INACTIVE
+  DELETED
+
+  @@map("user_status")
+}
+
 /// Purpose of the email verification
 enum VerificationPurpose {
   REGISTER
@@ -414,4 +459,121 @@ model EmailVerificationToken {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("email_verification_tokens")
+}
+
+/// Represents a global user identity in the system.
+/// A user can belong to multiple companies — company-specific data lives in UserCompany.
+model User {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Identity ──────────────────────────────────
+  /// Primary email address used for login and communication
+  email            String   @unique @map("email")
+  /// Case-folded copy of email for duplicate checking
+  normalizedEmail  String   @unique @map("normalized_email")
+  /// Unique login username
+  username         String   @unique @map("username")
+  /// Case-folded copy of username for duplicate checking
+  normalizedUsername String @unique @map("normalized_username")
+  /// Primary mobile contact number
+  mobileNumber           String? @unique @map("mobile_number")
+  /// Secondary mobile contact number
+  alternateMobileNumber  String? @map("alternate_mobile_number")
+
+  // ─── Personal Information ──────────────────────
+  firstName       String         @map("first_name")
+  middleName      String?        @map("middle_name")
+  lastName        String?        @map("last_name")
+  displayName     String?        @map("display_name")
+  profilePhotoUrl String?        @map("profile_photo_url")
+  gender          Gender?        @map("gender")
+  dateOfBirth     DateTime?      @map("date_of_birth")
+  bloodGroup      String?        @map("blood_group")
+  maritalStatus   MaritalStatus? @map("marital_status")
+  nationality     String?        @map("nationality")
+  /// Preferred interface language
+  preferredLanguage Language @default(EN) @map("preferred_language")
+  /// User's local timezone
+  timezone         Timezone @default(ASIA_KOLKATA) @map("timezone")
+
+  // ─── Authentication ────────────────────────────
+  /// Bcrypt-hashed password
+  passwordHash        String    @map("password_hash")
+  /// Timestamp of last password change (for token invalidation)
+  passwordChangedAt   DateTime? @map("password_changed_at")
+  emailVerified       Boolean   @default(false) @map("email_verified")
+  emailVerifiedAt     DateTime? @map("email_verified_at")
+  mobileVerified      Boolean   @default(false) @map("mobile_verified")
+  mobileVerifiedAt    DateTime? @map("mobile_verified_at")
+  twoFactorEnabled    Boolean   @default(false) @map("two_factor_enabled")
+  /// Encrypted TOTP secret for 2FA
+  twoFactorSecret     String?   @map("two_factor_secret")
+  /// Forces password change on next login (e.g., admin reset)
+  passwordResetRequired Boolean @default(false) @map("password_reset_required")
+  /// Forces password change (used during first login after invite)
+  forcePasswordChange   Boolean @default(false) @map("force_password_change")
+  /// Incremented on password change / logout-all to invalidate all sessions
+  refreshTokenVersion   Int     @default(0) @map("refresh_token_version")
+  /// Random unique string changed on every authentication event
+  securityStamp         String? @map("security_stamp")
+
+  // ─── Login Tracking ────────────────────────────
+  lastLoginAt         DateTime? @map("last_login_at")
+  lastLoginIp         String?   @map("last_login_ip")
+  lastLoginUserAgent  String?   @map("last_login_user_agent")
+  lastLoginDevice     String?   @map("last_login_device")
+  /// Consecutive failed login attempts
+  failedLoginAttempts Int      @default(0) @map("failed_login_attempts")
+  /// Account is locked until this timestamp
+  lockUntil           DateTime? @map("lock_until")
+  lastPasswordResetAt DateTime? @map("last_password_reset_at")
+
+  // ─── Status ────────────────────────────────────
+  status   UserStatus @default(PENDING_VERIFICATION) @map("status")
+  isActive Boolean    @default(false) @map("is_active")
+
+  // ─── Communication ─────────────────────────────
+  preferredCommunicationChannel PreferredCommunicationChannel @default(EMAIL) @map("preferred_communication_channel")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  // UserCompany              UserCompany[]
+  // UserRole                 UserRole[]
+  // Session                  Session[]
+  // PasswordResetToken       PasswordResetToken[]
+  // EmailVerificationToken   EmailVerificationToken[]
+  // AuditLog                 AuditLog[]
+  // Notification             Notification[]
+  // FileStorage              FileStorage[]
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([email])
+  @@index([normalizedEmail])
+  @@index([username])
+  @@index([normalizedUsername])
+  @@index([mobileNumber])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([lastLoginAt])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("users")
 }
