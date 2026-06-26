@@ -446,14 +446,8 @@ export class AuthService {
       throw new InactiveCompanyException();
     }
 
-    if (
-      companyUser.status !== 'ACTIVE' ||
-      !companyUser.isActive ||
-      companyUser.isDeleted
-    ) {
-      this.logger.warn(
-        `Company selection failed: membership ${companyUser.id} is not active`,
-      );
+    if (companyUser.status !== 'ACTIVE' || !companyUser.isActive || companyUser.isDeleted) {
+      this.logger.warn(`Company selection failed: membership ${companyUser.id} is not active`);
       throw new InactiveCompanyUserException();
     }
 
@@ -469,9 +463,7 @@ export class AuthService {
       companyUserId: companyUser.id,
     });
 
-    const expiresIn = Math.floor(
-      parseExpiry(this.jwtConfigService.accessToken.expiresIn) / 1000,
-    );
+    const expiresIn = Math.floor(parseExpiry(this.jwtConfigService.accessToken.expiresIn) / 1000);
 
     await this.authRepository.updateSessionCompanyContext(sessionId, {
       activeCompanyId: companyId,
@@ -531,14 +523,8 @@ export class AuthService {
       throw new InactiveCompanyException();
     }
 
-    if (
-      companyUser.status !== 'ACTIVE' ||
-      !companyUser.isActive ||
-      companyUser.isDeleted
-    ) {
-      this.logger.warn(
-        `Company switch failed: membership ${companyUser.id} is not active`,
-      );
+    if (companyUser.status !== 'ACTIVE' || !companyUser.isActive || companyUser.isDeleted) {
+      this.logger.warn(`Company switch failed: membership ${companyUser.id} is not active`);
       throw new InactiveCompanyUserException();
     }
 
@@ -586,9 +572,7 @@ export class AuthService {
       performedAt: new Date(),
     });
 
-    this.logger.log(
-      `Company switched: user ${userId} from ${currentCompanyId} to ${companyId}`,
-    );
+    this.logger.log(`Company switched: user ${userId} from ${currentCompanyId} to ${companyId}`);
 
     return {
       success: true as const,

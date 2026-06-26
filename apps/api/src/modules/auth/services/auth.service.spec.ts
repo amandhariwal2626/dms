@@ -609,7 +609,10 @@ describe('AuthService', () => {
       authRepository.findCompanyUser.mockResolvedValue(mockCompanyUser as never);
 
       const result = await authService.switchCompany(
-        'user-id', 'company-id-2', 'session-id', 'company-id',
+        'user-id',
+        'company-id-2',
+        'session-id',
+        'company-id',
       );
 
       expect(result.success).toBe(true);

@@ -232,7 +232,10 @@ export class AuthRepository {
           },
         },
       },
-      orderBy: [{ isDefaultCompany: 'desc' }, { lastCompanyLoginAt: { sort: 'desc', nulls: 'last' } }],
+      orderBy: [
+        { isDefaultCompany: 'desc' },
+        { lastCompanyLoginAt: { sort: 'desc', nulls: 'last' } },
+      ],
     });
   }
 
