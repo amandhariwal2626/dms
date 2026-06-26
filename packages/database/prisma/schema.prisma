@@ -468,6 +468,42 @@ enum RolePermissionStatus {
   @@map("role_permission_status")
 }
 
+/// How a user role assignment was created
+enum UserRoleSource {
+  SYSTEM
+  SELF_ONBOARDING
+  INVITATION
+  MANUAL
+  IMPORT
+  API
+
+  @@map("user_role_source")
+}
+
+/// How broadly a user role applies
+enum UserRoleScope {
+  GLOBAL
+  COMPANY
+  WAREHOUSE
+  REGION
+  ROUTE
+  BEAT
+  SELF
+  CUSTOM
+
+  @@map("user_role_scope")
+}
+
+/// Lifecycle status of a user-role assignment
+enum UserRoleStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  EXPIRED
+
+  @@map("user_role_status")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -820,7 +856,6 @@ model User {
   // ─── Relations ─────────────────────────────────
   companyUsers CompanyUser[]
   sessions     Session[]
-  // UserRole                 UserRole[]
   // PasswordResetToken       PasswordResetToken[]
   // EmailVerificationToken   EmailVerificationToken[]
   // AuditLog                 AuditLog[]
@@ -948,7 +983,7 @@ model CompanyUser {
   /// Inverse self-relation: subordinates reporting to this user
   subordinates     CompanyUser[] @relation("ReportingHierarchy")
 
-  // UserRole              UserRole[]
+  userRoles UserRole[]
   // Attendance            Attendance[]
   // Leave                 Leave[]
   // WarehouseAssignment   WarehouseAssignment[]
@@ -1160,7 +1195,7 @@ model Role {
   childRoles  Role[]  @relation("RoleHierarchy")
 
   rolePermissions RolePermission[]
-  // UserRole      UserRole[]
+  userRoles       UserRole[]
 
   // ─── Constraints ───────────────────────────────
   /// Role name must be unique within a company
@@ -1473,4 +1508,87 @@ model RolePermission {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("role_permissions")
+}
+
+/// Assigns a role to a company user.
+/// References CompanyUser (not User) because a user may have different roles
+/// in different companies.
+model UserRole {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  /// Reference to the company-user membership
+  companyUserId String @map("company_user_id")
+  /// Reference to the company-specific role
+  roleId String @map("role_id")
+
+  // ─── Assignment Information ────────────────────
+  /// Who assigned this role
+  assignedBy       String         @map("assigned_by")
+  /// When the role was assigned
+  assignedAt       DateTime       @default(now()) @map("assigned_at")
+  /// Why this role was assigned
+  assignmentReason String?        @map("assignment_reason")
+  /// How this role assignment was created
+  source           UserRoleSource @default(MANUAL) @map("source")
+
+  // ─── Validity ──────────────────────────────────
+  /// When this role assignment becomes active
+  effectiveFrom DateTime? @map("effective_from")
+  /// When this role assignment expires
+  effectiveTo   DateTime? @map("effective_to")
+
+  // ─── Priority ──────────────────────────────────
+  /// Sort order when a user has multiple roles
+  priority       Int     @default(0) @map("priority")
+  /// Whether this is the user's primary role
+  isPrimaryRole  Boolean @default(false) @map("is_primary_role")
+
+  // ─── Scope ─────────────────────────────────────
+  /// How broadly this role applies for this user
+  scope           UserRoleScope @default(COMPANY) @map("scope")
+  /// ID of the specific scope entity (e.g., warehouse ID for WAREHOUSE scope)
+  scopeReferenceId String?      @map("scope_reference_id")
+
+  // ─── Status ────────────────────────────────────
+  status   UserRoleStatus @default(ACTIVE) @map("status")
+  isActive Boolean        @default(true) @map("is_active")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  companyUser CompanyUser @relation(fields: [companyUserId], references: [id])
+  role        Role        @relation(fields: [roleId], references: [id])
+
+  // ─── Constraints ───────────────────────────────
+  /// A company-user cannot have the same role assigned more than once
+  @@unique([companyUserId, roleId])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([companyUserId])
+  @@index([roleId])
+  @@index([status])
+  @@index([isPrimaryRole])
+  @@index([effectiveFrom])
+  @@index([effectiveTo])
+  @@index([isDeleted])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("user_roles")
 }
