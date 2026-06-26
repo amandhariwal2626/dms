@@ -438,6 +438,36 @@ enum ModuleCategory {
   @@map("module_category")
 }
 
+/// Whether the permission is granted or denied
+enum PermissionEffect {
+  ALLOW
+  DENY
+
+  @@map("permission_effect")
+}
+
+/// How broadly a role permission applies
+enum PermissionScope {
+  GLOBAL
+  COMPANY
+  WAREHOUSE
+  REGION
+  ROUTE
+  BEAT
+  SELF
+  CUSTOM
+
+  @@map("permission_scope")
+}
+
+/// Lifecycle status of a role-permission assignment
+enum RolePermissionStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("role_permission_status")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -1129,8 +1159,8 @@ model Role {
   /// Inverse self-relation: child roles beneath this one
   childRoles  Role[]  @relation("RoleHierarchy")
 
-  // UserRole         UserRole[]
-  // RolePermission   RolePermission[]
+  rolePermissions RolePermission[]
+  // UserRole      UserRole[]
 
   // ─── Constraints ───────────────────────────────
   /// Role name must be unique within a company
@@ -1240,7 +1270,7 @@ model Permission {
   version Int @default(1) @map("version")
 
   // ─── Relations ─────────────────────────────────
-  // RolePermission   RolePermission[]
+  rolePermissions RolePermission[]
 
   // ─── Indexes ───────────────────────────────────
   @@index([module])
@@ -1345,7 +1375,8 @@ model Module {
   /// Child modules nested under this one
   childModules Module[] @relation("ModuleHierarchy")
 
-  // Permission   Permission[]
+  rolePermissions RolePermission[]
+  // Permission    Permission[]
 
   // ─── Indexes ───────────────────────────────────
   @@index([name])
@@ -1357,4 +1388,89 @@ model Module {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("modules")
+}
+
+/// Maps a role to a permission with support for allow/deny, scope, conditions,
+/// field-level security, and time-bound validity.
+model RolePermission {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Foreign Keys ──────────────────────────────
+  /// Reference to the role
+  roleId String @map("role_id")
+  /// Reference to the global permission
+  permissionId String @map("permission_id")
+  /// Reference to the module (denormalised for query performance)
+  moduleId String @map("module_id")
+
+  // ─── Access ────────────────────────────────────
+  /// Whether this entry grants or denies the permission
+  effect PermissionEffect @default(ALLOW) @map("effect")
+
+  // ─── Scope ─────────────────────────────────────
+  /// How broadly this assignment applies
+  scope PermissionScope @default(GLOBAL) @map("scope")
+
+  // ─── Conditions ────────────────────────────────
+  /// Dynamic expression evaluated at runtime (e.g., "department == 'SALES'")
+  conditionExpression String? @map("condition_expression")
+  /// Specific fields the permission applies to (for field-level security)
+  fieldRestrictions Json? @map("field_restrictions")
+  /// Row-level filter predicate (for row-level security)
+  rowFilter Json? @map("row_filter")
+
+  // ─── Validity ──────────────────────────────────
+  /// When this permission assignment becomes active
+  effectiveFrom DateTime? @map("effective_from")
+  /// When this permission assignment expires
+  effectiveTo   DateTime? @map("effective_to")
+
+  // ─── Flags ─────────────────────────────────────
+  /// Whether this permission was inherited from a parent role
+  isInherited      Boolean @default(false) @map("is_inherited")
+  /// Whether this was assigned automatically by the system
+  isSystemAssigned Boolean @default(false) @map("is_system_assigned")
+
+  // ─── Status ────────────────────────────────────
+  status   RolePermissionStatus @default(ACTIVE) @map("status")
+  isActive Boolean              @default(true)  @map("is_active")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+  module     Module     @relation(fields: [moduleId], references: [id])
+
+  // ─── Constraints ───────────────────────────────
+  /// A role cannot have duplicate permissions
+  @@unique([roleId, permissionId])
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([roleId])
+  @@index([permissionId])
+  @@index([moduleId])
+  @@index([effect])
+  @@index([scope])
+  @@index([status])
+  @@index([isDeleted])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("role_permissions")
 }
