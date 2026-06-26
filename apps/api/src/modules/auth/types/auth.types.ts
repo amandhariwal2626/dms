@@ -1,30 +1,30 @@
 import type { Request } from 'express';
 
-export interface JwtPayload {
+export interface AccessTokenPayload {
   sub: string;
-  email: string;
-  iat?: number;
-  exp?: number;
+  sessionId: string;
+  tokenVersion: number;
+  iat: number;
+  exp: number;
   iss?: string;
   aud?: string;
   jti?: string;
 }
 
-export interface AccessTokenPayload extends JwtPayload {
-  type: 'access';
+export interface RefreshTokenPayload {
+  sub: string;
   sessionId: string;
-  companyId?: string;
-}
-
-export interface RefreshTokenPayload extends JwtPayload {
-  type: 'refresh';
-  tokenId: string;
-  sessionId: string;
+  refreshTokenVersion: number;
+  iat: number;
+  exp: number;
+  iss?: string;
+  aud?: string;
+  jti?: string;
 }
 
 export interface AuthenticatedUser {
   id: string;
-  email: string;
+  email?: string;
   isEmailVerified: boolean;
   isActive: boolean;
 }
