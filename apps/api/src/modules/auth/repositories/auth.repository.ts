@@ -72,6 +72,85 @@ export class AuthRepository {
     return this.prisma.$transaction(fn);
   }
 
+  // ─── Login ─────────────────────────────────────────
+
+  async findUserByEmailOrUsername(identifier: string) {
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { normalizedEmail: identifier },
+          { normalizedUsername: identifier },
+        ],
+      },
+    });
+  }
+
+  async findActiveCompanyMemberships(userId: string) {
+    return this.prisma.companyUser.findMany({
+      where: {
+        userId,
+        isActive: true,
+        isDeleted: false,
+        status: 'ACTIVE',
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            companyCode: true,
+            legalName: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+  }
+
+  async createSession(data: Prisma.SessionCreateInput) {
+    return this.prisma.session.create({ data });
+  }
+
+  async updateLastLogin(
+    userId: string,
+    data: {
+      lastLoginAt: Date;
+      lastLoginIp?: string;
+      lastLoginUserAgent?: string;
+      lastLoginDevice?: string;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+  }
+
+  async resetFailedAttempts(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: 0,
+        lockUntil: null,
+      },
+    });
+  }
+
+  async incrementFailedAttempts(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: { increment: 1 },
+      },
+    });
+  }
+
+  async lockAccount(userId: string, lockUntil: Date) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { lockUntil },
+    });
+  }
+
   // ─── Email Verification ────────────────────────────
 
   async createVerificationToken(data: Prisma.EmailVerificationTokenCreateInput) {
