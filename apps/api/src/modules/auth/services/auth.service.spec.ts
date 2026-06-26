@@ -157,7 +157,7 @@ describe('AuthService', () => {
       passwordService.validatePasswordStrength.mockReturnValue({ isValid: true, errors: [] });
       authRepository.findUserByNormalizedEmail.mockResolvedValue({
         id: 'existing-user-id',
-      } as User);
+      } as never);
 
       await expect(authService.register(mockRegisterDto)).rejects.toThrow(DuplicateEmailException);
     });

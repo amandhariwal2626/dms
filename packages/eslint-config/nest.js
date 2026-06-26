@@ -24,6 +24,7 @@ export default [
   {
     files: ['**/*.spec.ts'],
     rules: {
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
       '@typescript-eslint/unbound-method': 'off',
     },
   },
