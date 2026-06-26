@@ -9,6 +9,7 @@ import {
   SendVerificationDto,
   VerifyEmailDto,
   SwitchCompanyDto,
+  RefreshTokenDto,
 } from '../dto/auth.dto';
 import type { VerificationPurpose } from '@prisma/client';
 
@@ -58,6 +59,16 @@ export class AuthController {
       otp: dto.otp,
       purpose: 'REGISTER',
     });
+  }
+
+  @Post('refresh')
+  async refresh(
+    @Body() dto: RefreshTokenDto,
+    @Req() req: Request,
+  ) {
+    const tokenFromCookie = req.cookies?.['refresh_token'] as string | undefined;
+    const tokenValue = dto.refreshToken || tokenFromCookie || '';
+    return this.authService.refresh(tokenValue);
   }
 
   @UseGuards(AuthGuard('jwt'))

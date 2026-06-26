@@ -20,11 +20,16 @@ import {
   CompanyAccessDeniedException,
   InactiveCompanyException,
   InactiveCompanyUserException,
+  ReplayAttackException,
+  SessionRevokedException,
+  SessionExpiredException,
+  InvalidTokenException,
 } from '../exceptions/auth.exceptions';
 
 describe('AuthService', () => {
   let authService: AuthService;
   let passwordService: jest.Mocked<PasswordService>;
+  let hashService: jest.Mocked<HashService>;
   let authRepository: jest.Mocked<AuthRepository>;
   let eventEmitter: jest.Mocked<EventEmitter2>;
 
@@ -116,8 +121,12 @@ describe('AuthService', () => {
             lockAccount: jest.fn(),
             findUserCompanies: jest.fn(),
             findCompanyUser: jest.fn(),
+            findCompanyUserByUserId: jest.fn(),
+            findSessionById: jest.fn(),
             updateCompanyUserLastAccessed: jest.fn(),
             updateSessionCompanyContext: jest.fn(),
+            updateSessionRotation: jest.fn(),
+            revokeSession: jest.fn(),
             createActivityLog: jest.fn(),
             $transaction: jest.fn(),
           },
@@ -133,6 +142,7 @@ describe('AuthService', () => {
 
     authService = module.get<AuthService>(AuthService);
     passwordService = module.get(PasswordService);
+    hashService = module.get(HashService);
     tokenService = module.get(TokenService);
     authRepository = module.get(AuthRepository);
     eventEmitter = module.get(EventEmitter2);
@@ -660,6 +670,184 @@ describe('AuthService', () => {
       await expect(
         authService.switchCompany('user-id', 'company-id-2', 'session-id', 'company-id'),
       ).rejects.toThrow(InactiveCompanyUserException);
+    });
+  });
+
+  describe('refresh', () => {
+    const mockRefreshToken = 'valid-refresh-token-value';
+
+    const mockRefreshPayload = {
+      sub: 'user-id',
+      sessionId: 'session-id',
+      refreshTokenVersion: 0,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+    };
+
+    const mockSession = {
+      id: 'session-id',
+      userId: 'user-id',
+      refreshTokenHash: 'hashed-value',
+      refreshTokenVersion: 0,
+      isRevoked: false,
+      status: 'ACTIVE',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      metadata: {},
+      user: {
+        id: 'user-id',
+        isActive: true,
+        isDeleted: false,
+        status: 'ACTIVE',
+        emailVerified: true,
+        refreshTokenVersion: 0,
+        lockUntil: null,
+      },
+    };
+
+    const mockCompanyUser = {
+      id: 'cm-id',
+      company: {
+        id: 'company-id',
+        status: 'ACTIVE' as const,
+        isDeleted: false,
+      },
+    };
+
+    const mockRefreshTx = {
+      session: {
+        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      user: {
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+
+    function setupSuccessfulRefreshMocks() {
+      tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
+      authRepository.findSessionById.mockResolvedValue(mockSession as never);
+      hashService.compare.mockReturnValue(true);
+      tokenService.verifyRefreshToken.mockResolvedValue(mockRefreshPayload);
+      authRepository.findCompanyUserByUserId.mockResolvedValue(mockCompanyUser as never);
+      tokenService.generateRefreshToken.mockResolvedValue('new-refresh-token');
+      tokenService.generateAccessToken.mockResolvedValue('new-access-token');
+      authRepository.$transaction.mockImplementation(
+        (fn: (tx: Prisma.TransactionClient) => Promise<unknown>) =>
+          fn(mockRefreshTx as unknown as Prisma.TransactionClient),
+      );
+      authRepository.createActivityLog.mockResolvedValue({ id: 'log-id' } as never);
+    }
+
+    it('should refresh token successfully', async () => {
+      setupSuccessfulRefreshMocks();
+
+      const result = await authService.refresh(mockRefreshToken);
+
+      expect(result.success).toBe(true);
+      expect(result.accessToken).toBe('new-access-token');
+      expect(result.refreshToken).toBe('new-refresh-token');
+      expect(eventEmitter.emit).toHaveBeenCalled();
+      expect(authRepository.createActivityLog).toHaveBeenCalled();
+    });
+
+    it('should throw InvalidTokenException when token is malformed', async () => {
+      tokenService.decodeToken.mockReturnValue(null);
+
+      await expect(authService.refresh('bad-token')).rejects.toThrow(InvalidTokenException);
+    });
+
+    it('should throw InvalidTokenException when decoded payload has no sessionId', async () => {
+      tokenService.decodeToken.mockReturnValue({ sub: 'user-id' } as never);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(InvalidTokenException);
+    });
+
+    it('should throw SessionExpiredException when session is not found', async () => {
+      tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
+      authRepository.findSessionById.mockResolvedValue(null);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(SessionExpiredException);
+    });
+
+    it('should throw SessionRevokedException when session is revoked', async () => {
+      tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
+      authRepository.findSessionById.mockResolvedValue({
+        ...mockSession,
+        isRevoked: true,
+      } as never);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(SessionRevokedException);
+    });
+
+    it('should throw SessionExpiredException when session has expired', async () => {
+      tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
+      authRepository.findSessionById.mockResolvedValue({
+        ...mockSession,
+        expiresAt: new Date(Date.now() - 1000),
+      } as never);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(SessionExpiredException);
+    });
+
+    it('should throw InactiveUserException when user is inactive', async () => {
+      tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
+      authRepository.findSessionById.mockResolvedValue({
+        ...mockSession,
+        user: { status: 'SUSPENDED' },
+      } as never);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(InactiveUserException);
+    });
+
+    it('should throw ReplayAttackException on token version mismatch and revoke session', async () => {
+      tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
+      authRepository.findSessionById.mockResolvedValue({
+        ...mockSession,
+        user: { ...mockSession.user, refreshTokenVersion: 1 },
+      } as never);
+      tokenService.verifyRefreshToken.mockResolvedValue(mockRefreshPayload);
+      authRepository.revokeSession.mockResolvedValue({} as never);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(ReplayAttackException);
+      expect(authRepository.revokeSession).toHaveBeenCalled();
+      expect(eventEmitter.emit).toHaveBeenCalled();
+    });
+
+    it('should throw ReplayAttackException on hash mismatch and revoke session', async () => {
+      tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
+      authRepository.findSessionById.mockResolvedValue(mockSession);
+      tokenService.verifyRefreshToken.mockResolvedValue(mockRefreshPayload);
+
+      hashService.compare.mockReturnValue(false);
+      authRepository.revokeSession.mockResolvedValue({} as never);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(ReplayAttackException);
+      expect(authRepository.revokeSession).toHaveBeenCalled();
+      expect(eventEmitter.emit).toHaveBeenCalled();
+    });
+
+    it('should throw InactiveCompanyException when company is inactive', async () => {
+      setupSuccessfulRefreshMocks();
+      authRepository.findCompanyUserByUserId.mockResolvedValue({
+        ...mockCompanyUser,
+        company: { ...mockCompanyUser.company, status: 'SUSPENDED' },
+      } as never);
+
+      await expect(authService.refresh(mockRefreshToken)).rejects.toThrow(InactiveCompanyException);
+    });
+
+    it('should generate new tokens and rotate identifiers', async () => {
+      setupSuccessfulRefreshMocks();
+
+      await authService.refresh(mockRefreshToken);
+
+      expect(tokenService.generateAccessToken).toHaveBeenCalled();
+      expect(tokenService.generateRefreshToken).toHaveBeenCalledWith(
+        expect.objectContaining({ refreshTokenVersion: 1 }),
+      );
+      expect(authRepository.$transaction).toHaveBeenCalled();
+      expect(authRepository.createActivityLog).toHaveBeenCalled();
+      expect(eventEmitter.emit).toHaveBeenCalled();
     });
   });
 });

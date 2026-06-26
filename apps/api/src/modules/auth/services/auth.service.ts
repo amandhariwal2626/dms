@@ -21,6 +21,10 @@ import {
   CompanyAccessDeniedException,
   InactiveCompanyException,
   InactiveCompanyUserException,
+  ReplayAttackException,
+  SessionRevokedException,
+  SessionExpiredException,
+  InvalidTokenException,
 } from '../exceptions/auth.exceptions';
 import { normalizeEmail, normalizeUsername } from '../utils/auth.util';
 import {
@@ -28,6 +32,8 @@ import {
   UserLoggedInEvent,
   CompanySelectedEvent,
   CompanySwitchedEvent,
+  TokenRefreshedEvent,
+  SessionRevokedEvent,
 } from '../events/auth.events';
 import { createDefaultCompanySettings } from '../utils/company-settings.util';
 import { LOGIN_CONSTANTS } from '../constants/auth.constants';
@@ -48,6 +54,14 @@ export interface LoginCompanyInfo {
   legalName: string;
   displayName: string;
   isDefault: boolean;
+}
+
+export interface RefreshResponse {
+  success: true;
+  message: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
 }
 
 export interface LoginResponse {
@@ -583,6 +597,164 @@ export class AuthService {
       companyId,
       companyUserId: companyUser.id,
       activeRoleIds,
+    };
+  }
+
+  async refresh(tokenValue: string): Promise<RefreshResponse> {
+    this.logger.log('Refresh started');
+
+    const decoded = this.tokenService.decodeToken(tokenValue) as { sub: string; sessionId: string; refreshTokenVersion: number } | null;
+    if (!decoded || typeof decoded === 'string' || !decoded.sessionId) {
+      this.logger.warn('Refresh failed: invalid refresh token');
+      throw new InvalidTokenException();
+    }
+
+    const sessionId = decoded.sessionId;
+    const session = await this.authRepository.findSessionById(sessionId);
+
+    if (!session) {
+      this.logger.warn(`Refresh failed: session ${sessionId} not found`);
+      throw new SessionExpiredException();
+    }
+
+    if (session.isRevoked || session.status !== 'ACTIVE') {
+      this.logger.warn(`Refresh failed: session ${sessionId} is revoked or inactive`);
+      throw new SessionRevokedException();
+    }
+
+    if (session.expiresAt && new Date(session.expiresAt) <= new Date()) {
+      this.logger.warn(`Refresh failed: session ${sessionId} has expired`);
+      throw new SessionExpiredException();
+    }
+
+    const user = session.user;
+    if (user.isDeleted || user.status !== 'ACTIVE' || !user.isActive) {
+      this.logger.warn(`Refresh failed: user ${user.id} is not active`);
+      throw new InactiveUserException();
+    }
+
+    if (user.lockUntil && new Date(user.lockUntil) > new Date()) {
+      this.logger.warn(`Refresh failed: user ${user.id} account is locked`);
+      throw new AccountLockedException();
+    }
+
+    const payload = await this.tokenService.verifyRefreshToken(tokenValue);
+
+    if (payload.refreshTokenVersion !== user.refreshTokenVersion) {
+      this.logger.warn(`Refresh failed: token version mismatch for session ${sessionId}`);
+      await this.authRepository.revokeSession(sessionId, {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revocationReason: 'TOKEN_VERSION_MISMATCH',
+        status: 'REVOKED',
+      });
+      this.eventEmitter.emit(
+        SessionRevokedEvent.eventName,
+        new SessionRevokedEvent(user.id, sessionId, 'TOKEN_VERSION_MISMATCH'),
+      );
+      throw new ReplayAttackException();
+    }
+
+    const hashMatch = this.hashService.compare(tokenValue, session.refreshTokenHash);
+    if (!hashMatch) {
+      this.logger.warn(`Refresh failed: refresh token hash mismatch for session ${sessionId}`);
+      await this.authRepository.revokeSession(sessionId, {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revocationReason: 'REFRESH_TOKEN_HASH_MISMATCH',
+        status: 'REVOKED',
+      });
+      this.eventEmitter.emit(
+        SessionRevokedEvent.eventName,
+        new SessionRevokedEvent(user.id, sessionId, 'REFRESH_TOKEN_REUSE'),
+      );
+      throw new ReplayAttackException();
+    }
+
+    const companyUser = await this.authRepository.findCompanyUserByUserId(user.id);
+    if (companyUser) {
+      if (companyUser.company.status !== 'ACTIVE' || companyUser.company.isDeleted) {
+        this.logger.warn(`Refresh failed: company ${companyUser.company.id} is not active`);
+        throw new InactiveCompanyException();
+      }
+    }
+
+    const newRefreshTokenIdentifier = this.sessionTokenService.generateRefreshTokenIdentifier();
+    const newRefreshTokenHash = this.hashService.hash(newRefreshTokenIdentifier);
+    const newRefreshTokenVersion = user.refreshTokenVersion + 1;
+    const now = new Date();
+
+    const newRefreshToken = await this.tokenService.generateRefreshToken({
+      userId: user.id,
+      sessionId,
+      refreshTokenVersion: newRefreshTokenVersion,
+    });
+
+    const newAccessToken = await this.tokenService.generateAccessToken({
+      userId: user.id,
+      sessionId,
+      tokenVersion: 0,
+      ...(companyUser?.company.id !== undefined ? { companyId: companyUser.company.id } : {}),
+      ...(companyUser?.id !== undefined ? { companyUserId: companyUser.id } : {}),
+    });
+
+    const refreshExpiryMs = parseExpiry(this.jwtConfigService.refreshToken.expiresIn);
+    const newExpiresAt = new Date(now.getTime() + refreshExpiryMs);
+
+    await this.authRepository.$transaction(async (tx) => {
+      const existing = await tx.session.findUnique({
+        where: { id: sessionId },
+        select: { metadata: true },
+      });
+
+      const existingMetadata = existing?.metadata as Record<string, unknown> | null ?? {};
+
+      await tx.session.update({
+        where: { id: sessionId },
+        data: {
+          refreshTokenHash: newRefreshTokenHash,
+          refreshTokenVersion: newRefreshTokenVersion,
+          lastActivityAt: now,
+          expiresAt: newExpiresAt,
+          metadata: {
+            ...existingMetadata,
+            lastRefreshAt: now.toISOString(),
+          },
+        },
+      });
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: { refreshTokenVersion: newRefreshTokenVersion },
+      });
+    });
+
+    const accessExpiryMs = parseExpiry(this.jwtConfigService.accessToken.expiresIn);
+    const expiresIn = Math.floor(accessExpiryMs / 1000);
+
+    this.eventEmitter.emit(
+      TokenRefreshedEvent.eventName,
+      new TokenRefreshedEvent(user.id, sessionId),
+    );
+
+    await this.authRepository.createActivityLog({
+      user: { connect: { id: user.id } },
+      title: 'Session Refreshed',
+      activityType: 'LOGIN',
+      module: 'AUTH',
+      entityName: 'Session',
+      entityId: sessionId,
+      performedAt: now,
+    });
+
+    this.logger.log(`Refresh successful for user ${user.id}`);
+
+    return {
+      success: true as const,
+      message: 'Token refreshed successfully',
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      expiresIn,
     };
   }
 
