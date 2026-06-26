@@ -2,6 +2,7 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -75,9 +76,22 @@ export class RefreshTokenDto {
   refreshToken!: string;
 }
 
-export class VerifyEmailDto {
+export class SendVerificationDto {
+  @IsEmail()
+  email!: string;
+
+  @IsOptional()
   @IsString()
-  token!: string;
+  deviceId?: string;
+}
+
+export class VerifyEmailDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp!: string;
 }
 
 export class ForgotPasswordDto {

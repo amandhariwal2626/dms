@@ -91,3 +91,21 @@ export class PasswordMismatchException extends HttpException {
     super({ status: 'error', message, code: 'PASSWORD_MISMATCH' }, HttpStatus.BAD_REQUEST);
   }
 }
+
+export class InvalidOtpException extends HttpException {
+  constructor(message = 'Invalid or expired OTP') {
+    super({ status: 'error', message, code: 'INVALID_OTP' }, HttpStatus.BAD_REQUEST);
+  }
+}
+
+export class OtpExpiredException extends HttpException {
+  constructor(message = 'OTP has expired. Please request a new one') {
+    super({ status: 'error', message, code: 'OTP_EXPIRED' }, HttpStatus.BAD_REQUEST);
+  }
+}
+
+export class TooManyAttemptsException extends HttpException {
+  constructor(message = 'Too many attempts. Please try again later') {
+    super({ status: 'error', message, code: 'TOO_MANY_ATTEMPTS' }, HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
