@@ -62,10 +62,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refresh(
-    @Body() dto: RefreshTokenDto,
-    @Req() req: Request,
-  ) {
+  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
     const tokenFromCookie = req.cookies?.['refresh_token'] as string | undefined;
     const tokenValue = dto.refreshToken || tokenFromCookie || '';
     return this.authService.refresh(tokenValue);

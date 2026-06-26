@@ -603,7 +603,11 @@ export class AuthService {
   async refresh(tokenValue: string): Promise<RefreshResponse> {
     this.logger.log('Refresh started');
 
-    const decoded = this.tokenService.decodeToken(tokenValue) as { sub: string; sessionId: string; refreshTokenVersion: number } | null;
+    const decoded = this.tokenService.decodeToken(tokenValue) as {
+      sub: string;
+      sessionId: string;
+      refreshTokenVersion: number;
+    } | null;
     if (!decoded || typeof decoded === 'string' || !decoded.sessionId) {
       this.logger.warn('Refresh failed: invalid refresh token');
       throw new InvalidTokenException();
@@ -707,7 +711,7 @@ export class AuthService {
         select: { metadata: true },
       });
 
-      const existingMetadata = existing?.metadata as Record<string, unknown> | null ?? {};
+      const existingMetadata = (existing?.metadata as Record<string, unknown> | null) ?? {};
 
       await tx.session.update({
         where: { id: sessionId },

@@ -815,7 +815,7 @@ describe('AuthService', () => {
 
     it('should throw ReplayAttackException on hash mismatch and revoke session', async () => {
       tokenService.decodeToken.mockReturnValue(mockRefreshPayload);
-      authRepository.findSessionById.mockResolvedValue(mockSession);
+      authRepository.findSessionById.mockResolvedValue(mockSession as never);
       tokenService.verifyRefreshToken.mockResolvedValue(mockRefreshPayload);
 
       hashService.compare.mockReturnValue(false);
