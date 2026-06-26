@@ -362,6 +362,60 @@ enum RoleStatus {
   @@map("role_status")
 }
 
+/// Granular action that a permission grants
+enum PermissionAction {
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  IMPORT
+  EXPORT
+  PRINT
+  UPLOAD
+  DOWNLOAD
+  ASSIGN
+  TRANSFER
+  CANCEL
+  RESTORE
+  ARCHIVE
+
+  @@map("permission_action")
+}
+
+/// Classification of what the permission controls
+enum PermissionType {
+  MENU
+  SCREEN
+  API
+  ACTION
+  FEATURE
+
+  @@map("permission_type")
+}
+
+/// Lifecycle status of a permission record
+enum PermissionStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("permission_status")
+}
+
+/// HTTP methods for API-level permissions
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+
+  @@map("http_method")
+}
+
 // ──────────────────────────────────────────────
 // MODELS
 // ──────────────────────────────────────────────
@@ -1073,4 +1127,109 @@ model Role {
 
   // ─── Table Mapping ─────────────────────────────
   @@map("roles")
+}
+
+/// Global permission catalog for the entire DMS.
+/// Permissions are not company-specific — they define the full set of possible actions
+/// across all modules. Roles are then mapped to permissions via RolePermission.
+model Permission {
+  // ─── Primary Key ───────────────────────────────
+  id String @id @default(uuid()) @map("id")
+
+  // ─── Module Information ────────────────────────
+  /// Top-level module name (e.g., "Products", "Sales Order")
+  module    String @map("module")
+  /// Submodule within the parent module (e.g., "Categories" under "Products")
+  subModule String? @map("sub_module")
+  /// Specific feature or screen within the submodule
+  feature   String? @map("feature")
+  /// Individual UI screen identifier
+  screen    String? @map("screen")
+
+  // ─── Permission Information ────────────────────
+  /// Human-readable unique permission name
+  name        String  @unique @map("name")
+  /// Display label for UI (e.g., "Create Product")
+  displayName String? @map("display_name")
+  /// Unique programmatic code (e.g., "PRODUCT_CREATE")
+  code        String  @unique @map("code")
+  /// Purpose of this permission
+  description String? @map("description")
+
+  // ─── Action ────────────────────────────────────
+  /// The CRUD / action verb this permission represents
+  action PermissionAction @map("action")
+
+  // ─── Resource ──────────────────────────────────
+  /// Type of resource being controlled (e.g., "Product", "Order")
+  resourceType String? @map("resource_type")
+  /// Name of the resource
+  resourceName String? @map("resource_name")
+  /// API endpoint path (for API-type permissions)
+  apiEndpoint  String?  @map("api_endpoint")
+  /// HTTP method for the API endpoint
+  httpMethod   HttpMethod? @map("http_method")
+  /// Frontend route path (for menu/screen permissions)
+  frontendRoute String? @map("frontend_route")
+  /// Unique key for menu identification
+  menuKey       String? @map("menu_key")
+  /// Icon class or identifier for UI display
+  icon          String? @map("icon")
+  /// Sort order for displaying in menus
+  displayOrder  Int?    @map("display_order")
+
+  // ─── UI Configuration ──────────────────────────
+  showInMenu    Boolean @default(true)  @map("show_in_menu")
+  showInSidebar Boolean @default(true)  @map("show_in_sidebar")
+  showInMobile  Boolean @default(true)  @map("show_in_mobile")
+  /// Whether this permission should be hidden from the UI
+  isHidden      Boolean @default(false) @map("is_hidden")
+
+  // ─── Permission Type ───────────────────────────
+  permissionType PermissionType @default(FEATURE) @map("permission_type")
+
+  // ─── Flags ─────────────────────────────────────
+  /// System permissions cannot be modified or deleted
+  isSystemPermission Boolean @default(false) @map("is_system_permission")
+  /// Whether the permission metadata can be edited
+  isEditable   Boolean @default(true) @map("is_editable")
+  /// Deprecated permissions are hidden but kept for historical references
+  isDeprecated Boolean @default(false) @map("is_deprecated")
+
+  // ─── Status ────────────────────────────────────
+  status   PermissionStatus @default(ACTIVE) @map("status")
+  isActive Boolean           @default(true) @map("is_active")
+
+  // ─── Metadata ──────────────────────────────────
+  /// Flexible JSON field for extensible metadata
+  metadata Json? @map("metadata")
+
+  // ─── Audit Fields ──────────────────────────────
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+
+  // ─── Optimistic Locking ────────────────────────
+  /// Incremented on every update for optimistic concurrency control
+  version Int @default(1) @map("version")
+
+  // ─── Relations ─────────────────────────────────
+  // RolePermission   RolePermission[]
+
+  // ─── Indexes ───────────────────────────────────
+  @@index([module])
+  @@index([subModule])
+  @@index([feature])
+  @@index([action])
+  @@index([permissionType])
+  @@index([status])
+  @@index([code])
+  @@index([isDeleted])
+
+  // ─── Table Mapping ─────────────────────────────
+  @@map("permissions")
 }
