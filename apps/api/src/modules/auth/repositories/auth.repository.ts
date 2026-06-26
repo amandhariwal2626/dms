@@ -78,10 +78,7 @@ export class AuthRepository {
     return this.prisma.emailVerificationToken.create({ data });
   }
 
-  async findPendingVerification(
-    email: string,
-    purpose: VerificationPurpose,
-  ) {
+  async findPendingVerification(email: string, purpose: VerificationPurpose) {
     return this.prisma.emailVerificationToken.findFirst({
       where: {
         email,
@@ -94,10 +91,7 @@ export class AuthRepository {
     });
   }
 
-  async updateVerificationToken(
-    id: string,
-    data: Prisma.EmailVerificationTokenUpdateInput,
-  ) {
+  async updateVerificationToken(id: string, data: Prisma.EmailVerificationTokenUpdateInput) {
     return this.prisma.emailVerificationToken.update({
       where: { id },
       data,

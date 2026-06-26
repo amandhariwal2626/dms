@@ -7,9 +7,7 @@ import { EmailVerificationService } from '../services/email-verification.service
 export class AuthListener {
   private readonly logger = new Logger(AuthListener.name);
 
-  constructor(
-    private readonly emailVerificationService: EmailVerificationService,
-  ) {}
+  constructor(private readonly emailVerificationService: EmailVerificationService) {}
 
   @OnEvent(UserRegisteredEvent.eventName)
   async handleUserRegistered(event: UserRegisteredEvent): Promise<void> {
