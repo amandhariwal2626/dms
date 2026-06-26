@@ -473,7 +473,7 @@ describe('AuthService', () => {
 
       const result = await authService.getUserCompanies('user-id');
 
-      expect(result[0].displayName).toBe('Test Company');
+      expect(result[0]?.displayName).toBe('Test Company');
     });
   });
 
