@@ -901,4 +901,56 @@ export class AuthRepository {
     const client = tx ?? this.prisma;
     return client.rolePermission.deleteMany({ where: { roleId } });
   }
+
+  // ─── Authorization Engine ───────────────────────
+
+  findCompanyUserWithCompany(companyId: string, userId: string) {
+    return this.prisma.companyUser.findFirst({
+      where: {
+        companyId,
+        userId,
+        isDeleted: false,
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            companyCode: true,
+            legalName: true,
+            displayName: true,
+            status: true,
+            isActive: true,
+            isDeleted: true,
+          },
+        },
+      },
+    });
+  }
+
+  findActiveUserRolesByCompanyUser(companyUserId: string) {
+    return this.prisma.userRole.findMany({
+      where: {
+        companyUserId,
+        isDeleted: false,
+      },
+      include: {
+        role: true,
+      },
+      orderBy: [{ priority: 'asc' }],
+    });
+  }
+
+  findActiveRolePermissionsByRoleIds(roleIds: string[]) {
+    return this.prisma.rolePermission.findMany({
+      where: {
+        roleId: { in: roleIds },
+        isDeleted: false,
+        isActive: true,
+        status: 'ACTIVE',
+      },
+      include: {
+        permission: true,
+      },
+    });
+  }
 }
