@@ -22,6 +22,11 @@ import { InvitationService } from './services/invitation.service';
 import { RoleService } from './services/role.service';
 import { PermissionService } from './services/permission.service';
 import { RolePermissionService } from './services/role-permission.service';
+import { InMemoryCacheProvider, PermissionCacheService } from './services/permission-cache.service';
+import { CompanyContextResolver } from './services/company-context-resolver.service';
+import { RoleResolver } from './services/role-resolver.service';
+import { PermissionResolver } from './services/permission-resolver.service';
+import { AuthorizationService } from './services/authorization.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { HashService } from './services/hash.service';
 import { SessionTokenService } from './services/session-token.service';
@@ -69,6 +74,16 @@ import { AuthListener } from './listeners/auth.listener';
     RoleService,
     PermissionService,
     RolePermissionService,
+    InMemoryCacheProvider,
+    {
+      provide: 'CACHE_PROVIDER',
+      useExisting: InMemoryCacheProvider,
+    },
+    PermissionCacheService,
+    CompanyContextResolver,
+    RoleResolver,
+    PermissionResolver,
+    AuthorizationService,
     EmailVerificationService,
     HashService,
     SessionTokenService,
@@ -85,6 +100,7 @@ import { AuthListener } from './listeners/auth.listener';
     TokenService,
     SessionService,
     PasswordService,
+    AuthorizationService,
     EmailVerificationService,
     HashService,
     SessionTokenService,

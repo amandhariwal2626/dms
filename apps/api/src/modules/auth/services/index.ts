@@ -12,3 +12,8 @@ export * from './invitation.service';
 export * from './role.service';
 export * from './permission.service';
 export * from './role-permission.service';
+export * from './permission-cache.service';
+export * from './company-context-resolver.service';
+export * from './role-resolver.service';
+export * from './permission-resolver.service';
+export * from './authorization.service';
