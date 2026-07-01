@@ -1111,6 +1111,233 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/permissions?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{base_url}}"],
+              "path": ["permissions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sortBy", "value": "createdAt" },
+                { "key": "sortOrder", "value": "desc" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "module", "value": "", "disabled": true },
+                { "key": "action", "value": "", "disabled": true },
+                { "key": "permissionType", "value": "", "disabled": true },
+                { "key": "status", "value": "", "disabled": true }
+              ]
+            },
+            "description": "List all permissions with pagination, search, sorting, and filtering."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"module\": \"Products\",\n      \"subModule\": null,\n      \"name\": \"Create Product\",\n      \"code\": \"PRODUCT_CREATE\",\n      \"displayName\": \"Create Product\",\n      \"description\": \"Allows creating new products\",\n      \"action\": \"CREATE\",\n      \"permissionType\": \"ACTION\",\n      \"resourceType\": \"Product\",\n      \"status\": \"ACTIVE\",\n      \"isSystemPermission\": false,\n      \"isActive\": true,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"page\": 1,\n    \"limit\": 10,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Permission",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/permissions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["permissions", ":id"],
+              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+            },
+            "description": "Get complete details of a specific permission."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid\",\n    \"module\": \"Products\",\n    \"name\": \"Create Product\",\n    \"code\": \"PRODUCT_CREATE\",\n    \"displayName\": \"Create Product\",\n    \"description\": \"Allows creating new products\",\n    \"action\": \"CREATE\",\n    \"permissionType\": \"ACTION\",\n    \"resourceType\": \"Product\",\n    \"apiEndpoint\": \"/api/products\",\n    \"httpMethod\": \"POST\",\n    \"frontendRoute\": \"/products/create\",\n    \"menuKey\": \"products.create\",\n    \"displayOrder\": 1,\n    \"showInMenu\": true,\n    \"showInSidebar\": true,\n    \"isSystemPermission\": false,\n    \"isEditable\": true,\n    \"isDeprecated\": false,\n    \"status\": \"ACTIVE\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00.000Z\",\n    \"createdBy\": \"user-uuid\",\n    \"updatedBy\": \"user-uuid\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"module-uuid-here\",\n  \"name\": \"View Product\",\n  \"code\": \"PRODUCT_VIEW\",\n  \"displayName\": \"View Product\",\n  \"description\": \"Allows viewing products\",\n  \"action\": \"VIEW\",\n  \"permissionType\": \"ACTION\",\n  \"resourceType\": \"Product\",\n  \"apiEndpoint\": \"/api/products\",\n  \"httpMethod\": \"GET\",\n  \"frontendRoute\": \"/products\",\n  \"menuKey\": \"products.view\",\n  \"displayOrder\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["permissions"]
+            },
+            "description": "Create a new permission. Code and name must be globally unique."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission created successfully\",\n  \"data\": {\n    \"id\": \"new-permission-uuid\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Permission",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Updated Display\",\n  \"description\": \"Updated description\",\n  \"frontendRoute\": \"/products/updated\",\n  \"menuKey\": \"products.updated\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/permissions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["permissions", ":id"],
+              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+            },
+            "description": "Update a permission's display name, description, routes, and UI metadata."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Permission Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/permissions/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["permissions", ":id", "status"],
+              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+            },
+            "description": "Change permission status: ACTIVE, INACTIVE, or ARCHIVED."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission activated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/permissions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["permissions", ":id"],
+              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+            },
+            "description": "Soft delete a permission. Cannot delete system permissions or permissions assigned to roles."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Permissions By Module",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/modules/:moduleId/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["modules", ":moduleId", "permissions"],
+              "variable": [{ "key": "moduleId", "value": "module-uuid-here" }]
+            },
+            "description": "List all permissions belonging to a specific module."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"name\": \"Create Product\",\n      \"code\": \"PRODUCT_CREATE\",\n      \"displayName\": \"Create Product\",\n      \"description\": \"Allows creating new products\",\n      \"action\": \"CREATE\",\n      \"permissionType\": \"ACTION\",\n      \"feature\": null,\n      \"displayOrder\": 1\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
