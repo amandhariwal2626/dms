@@ -530,4 +530,103 @@ export class AuthRepository {
   createFileAttachment(data: Prisma.FileAttachmentCreateInput) {
     return this.prisma.fileAttachment.create({ data });
   }
+
+  // ─── Invitation ────────────────────────────────────
+
+  findInvitationByToken(token: string) {
+    return this.prisma.emailVerificationToken.findFirst({
+      where: {
+        token,
+        purpose: 'INVITE',
+        isDeleted: false,
+      },
+    });
+  }
+
+  findInvitationById(id: string) {
+    return this.prisma.emailVerificationToken.findFirst({
+      where: {
+        id,
+        purpose: 'INVITE',
+        isDeleted: false,
+      },
+    });
+  }
+
+  findPendingInvitation(email: string, companyId: string) {
+    return this.prisma.emailVerificationToken.findFirst({
+      where: {
+        email,
+        purpose: 'INVITE',
+        isUsed: false,
+        isDeleted: false,
+        status: 'PENDING',
+        metadata: {
+          path: ['companyId'],
+          equals: companyId,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  findInvitationsByCompany(companyId: string) {
+    return this.prisma.emailVerificationToken.findMany({
+      where: {
+        purpose: 'INVITE',
+        isDeleted: false,
+        status: { in: ['PENDING', 'VERIFIED'] },
+        metadata: {
+          path: ['companyId'],
+          equals: companyId,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  findRoleById(roleId: string) {
+    return this.prisma.role.findUnique({ where: { id: roleId } });
+  }
+
+  findRolesByIds(roleIds: string[]) {
+    return this.prisma.role.findMany({
+      where: { id: { in: roleIds }, isDeleted: false },
+    });
+  }
+
+  async getNextEmployeeCode(companyId: string): Promise<string> {
+    const lastCompanyUser = await this.prisma.companyUser.findFirst({
+      where: { companyId, isDeleted: false },
+      orderBy: { employeeCode: 'desc' },
+      select: { employeeCode: true },
+    });
+
+    let nextNumber = 1;
+    if (lastCompanyUser?.employeeCode) {
+      const numStr = lastCompanyUser.employeeCode.replace('EMP', '');
+      nextNumber = Number.parseInt(numStr, 10) + 1;
+    }
+
+    return `EMP${String(nextNumber).padStart(6, '0')}`;
+  }
+
+  findCompanyUsersByEmail(email: string) {
+    return this.prisma.companyUser.findMany({
+      where: {
+        officialEmail: email,
+        isDeleted: false,
+      },
+    });
+  }
+
+  companyUserExists(companyId: string, userId: string) {
+    return this.prisma.companyUser.findFirst({
+      where: {
+        companyId,
+        userId,
+        isDeleted: false,
+      },
+    });
+  }
 }

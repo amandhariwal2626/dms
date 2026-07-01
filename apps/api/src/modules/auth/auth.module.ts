@@ -8,12 +8,14 @@ import type { EnvironmentVariables } from '@/config/env.validation';
 import { AuthController } from './controllers/auth.controller';
 import { PasswordResetController } from './controllers/password-reset.controller';
 import { ProfileController } from './controllers/profile.controller';
+import { InvitationController } from './controllers/invitation.controller';
 import { AuthService } from './services/auth.service';
 import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
 import { PasswordService } from './services/password.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { ProfileService } from './services/profile.service';
+import { InvitationService } from './services/invitation.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { HashService } from './services/hash.service';
 import { SessionTokenService } from './services/session-token.service';
@@ -41,7 +43,7 @@ import { AuthListener } from './listeners/auth.listener';
       }),
     }),
   ],
-  controllers: [AuthController, PasswordResetController, ProfileController],
+  controllers: [AuthController, PasswordResetController, ProfileController, InvitationController],
   providers: [
     AuthService,
     TokenService,
@@ -49,6 +51,7 @@ import { AuthListener } from './listeners/auth.listener';
     PasswordService,
     PasswordResetService,
     ProfileService,
+    InvitationService,
     EmailVerificationService,
     HashService,
     SessionTokenService,
