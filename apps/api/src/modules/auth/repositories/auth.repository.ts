@@ -819,6 +819,12 @@ export class AuthRepository {
     });
   }
 
+  findModuleByName(name: string) {
+    return this.prisma.module.findFirst({
+      where: { name, isDeleted: false },
+    });
+  }
+
   createPermission(data: Prisma.PermissionCreateInput) {
     return this.prisma.permission.create({ data });
   }
@@ -859,5 +865,40 @@ export class AuthRepository {
       },
       orderBy: [{ feature: 'asc' }, { displayOrder: 'asc' }],
     });
+  }
+
+  // ─── Role Permission Assignment ────────────────────
+
+  findRolePermissions(roleId: string) {
+    return this.prisma.rolePermission.findMany({
+      where: { roleId, isDeleted: false },
+      include: {
+        permission: true,
+        module: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            displayName: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+  }
+
+  findPermissionsByIds(ids: string[]) {
+    return this.prisma.permission.findMany({
+      where: { id: { in: ids }, isDeleted: false },
+    });
+  }
+
+  createRolePermissions(data: Prisma.RolePermissionCreateManyInput[]) {
+    return this.prisma.rolePermission.createManyAndReturn({ data });
+  }
+
+  deleteRolePermissions(roleId: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return client.rolePermission.deleteMany({ where: { roleId } });
   }
 }

@@ -3,3 +3,4 @@ export * from './profile.events';
 export * from './invitation.events';
 export * from './role.events';
 export * from './permission.events';
+export * from './role-permission.events';

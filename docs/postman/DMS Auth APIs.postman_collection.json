@@ -1109,6 +1109,157 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"Role deleted successfully\"\n}"
             }
           ]
+        },
+        {
+          "name": "Replace Role Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissionIds\": [\n    \"permission-uuid-1\",\n    \"permission-uuid-2\",\n    \"permission-uuid-3\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/:roleId/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":roleId", "permissions"],
+              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+            },
+            "description": "Atomically replace all permissions for a role. Removes existing assignments and creates new ones. Only active, non-archived permissions can be assigned."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role permissions updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Role Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/:roleId/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":roleId", "permissions"],
+              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+            },
+            "description": "Get all permissions for a role, grouped by module and feature. Shows assigned vs inherited permissions."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"roleId\": \"role-uuid\",\n    \"roleName\": \"Sales Manager\",\n    \"roleCode\": \"SALES_MANAGER\",\n    \"permissions\": [\n      {\n        \"module\": \"User Management\",\n        \"moduleId\": \"module-uuid\",\n        \"features\": [\n          {\n            \"feature\": \"User List\",\n            \"permissions\": [\n              {\n                \"id\": \"perm-uuid\",\n                \"name\": \"View Users\",\n                \"code\": \"USER_VIEW\",\n                \"displayName\": \"View Users\",\n                \"description\": \"View user list\",\n                \"action\": \"READ\",\n                \"permissionType\": \"FEATURE\",\n                \"assigned\": true,\n                \"inherited\": false,\n                \"effect\": \"ALLOW\",\n                \"scope\": \"GLOBAL\",\n                \"feature\": \"User List\",\n                \"screen\": null\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Effective Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/:roleId/permissions/effective-permissions",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":roleId", "permissions", "effective-permissions"],
+              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+            },
+            "description": "Get all effective permissions for a role including inherited ones. Returns a flat list of permissions with scope, effect, and inheritance info for frontend authorization."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"roleId\": \"role-uuid\",\n    \"roleName\": \"Sales Manager\",\n    \"roleCode\": \"SALES_MANAGER\",\n    \"permissions\": [\n      {\n        \"id\": \"perm-uuid\",\n        \"name\": \"View Users\",\n        \"code\": \"USER_VIEW\",\n        \"displayName\": \"View Users\",\n        \"action\": \"READ\",\n        \"effect\": \"ALLOW\",\n        \"scope\": \"GLOBAL\",\n        \"inherited\": false,\n        \"isSystemAssignment\": false,\n        \"module\": \"User Management\",\n        \"feature\": \"User List\",\n        \"screen\": null,\n        \"permissionType\": \"FEATURE\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Copy Role Permissions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceRoleId\": \"source-role-uuid-here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/:roleId/permissions/copy",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":roleId", "permissions", "copy"],
+              "variable": [{ "key": "roleId", "value": "target-role-uuid-here" }]
+            },
+            "description": "Copy all permissions from a source role to the target role. Replaces any existing permissions on the target role."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role permissions copied successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Clear Role Permissions",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/:roleId/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":roleId", "permissions"],
+              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+            },
+            "description": "Remove all permission assignments from a role. Cannot clear permissions for system roles."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role permissions cleared successfully\"\n}"
+            }
+          ]
         }
       ]
     },
