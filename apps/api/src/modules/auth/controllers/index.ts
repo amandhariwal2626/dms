@@ -4,3 +4,4 @@ export * from './profile.controller';
 export * from './invitation.controller';
 export * from './role.controller';
 export * from './permission.controller';
+export * from './role-permission.controller';

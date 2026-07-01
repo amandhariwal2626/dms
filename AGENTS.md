@@ -729,3 +729,48 @@ Only write comments when explaining business rules or non-obvious logic.
 ## Repository Rule
 
 Every coding agent working in this repository **must follow these coding standards**. Before generating or modifying code, review this `AGENTS.md` file and ensure all changes comply with these conventions. If existing code does not follow these standards, update it incrementally as part of the modified files rather than performing repository-wide refactors.
+
+---
+
+# Session Summary: Permission Assignment Engine (Role → Permission Mapping)
+
+## What was built
+
+| File                                                                  | Purpose                                                                                                                                     |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api/src/modules/auth/events/role-permission.events.ts`          | 3 events: `RolePermissionsUpdatedEvent`, `RolePermissionsCopiedEvent`, `RolePermissionsClearedEvent`                                        |
+| `apps/api/src/modules/auth/exceptions/role-permission.exceptions.ts`  | 3 exceptions: `PermissionArchivedException`, `DuplicatePermissionAssignmentException`, `InactiveRoleException`                              |
+| `apps/api/src/modules/auth/dto/role-permission.dto.ts`                | DTOs for replace/copy/read operations including grouped response types                                                                      |
+| `apps/api/src/modules/auth/services/role-permission.service.ts`       | Core service with 5 methods: `replacePermissions`, `getPermissionsByRole`, `getEffectivePermissions`, `copyPermissions`, `clearPermissions` |
+| `apps/api/src/modules/auth/controllers/role-permission.controller.ts` | 5 endpoints under `/roles/:roleId/permissions`                                                                                              |
+| `apps/api/src/modules/auth/services/role-permission.service.spec.ts`  | 30 comprehensive unit tests                                                                                                                 |
+
+### Modified Files
+
+- `apps/api/src/modules/auth/repositories/auth.repository.ts` — Added `findRolePermissions`, `findPermissionsByIds`, `createRolePermissions`, `deleteRolePermissions`, `findModuleByName`
+- `apps/api/src/modules/auth/auth.module.ts` — Registered `RolePermissionController` & `RolePermissionService`
+- `apps/api/src/modules/auth/events/index.ts` — Added barrel export
+- `apps/api/src/modules/auth/exceptions/index.ts` — Added barrel export
+- `apps/api/src/modules/auth/dto/index.ts` — Added barrel export
+- `apps/api/src/modules/auth/services/index.ts` — Added barrel export
+- `apps/api/src/modules/auth/controllers/index.ts` — Added barrel export
+- `docs/postman/DMS Auth APIs.postman_collection.json` — Added 5 endpoints to Roles folder
+
+## Endpoints
+
+| Method   | Route                                              | Description                                        |
+| -------- | -------------------------------------------------- | -------------------------------------------------- |
+| `PUT`    | `/roles/:roleId/permissions`                       | Atomically replace all permissions for a role      |
+| `GET`    | `/roles/:roleId/permissions`                       | List permissions grouped by module → feature       |
+| `GET`    | `/roles/:roleId/permissions/effective-permissions` | Flat list with inheritance, scope, effect for auth |
+| `POST`   | `/roles/:roleId/permissions/copy`                  | Copy all permissions from source role to target    |
+| `DELETE` | `/roles/:roleId/permissions`                       | Remove all permission assignments from a role      |
+
+## Key Design Decisions
+
+- **Transactional replace**: Delete + create inside a Prisma transaction
+- **Duplicate check**: Both DTO-level `@ArrayUnique()` and service-level dedup verification
+- **Module resolution**: Permission's `module` (name string) → `Module.id` (UUID) via `findModuleByName`
+- **Archived check**: Uses `isDeprecated` and `isActive` flags (not `PermissionStatus.ARCHIVED` which doesn't exist)
+- **System role protection**: All mutation endpoints reject system roles
+- **Company isolation**: Every lookup validates `role.companyId === companyId`

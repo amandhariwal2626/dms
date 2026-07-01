@@ -11,3 +11,4 @@ export * from './profile.service';
 export * from './invitation.service';
 export * from './role.service';
 export * from './permission.service';
+export * from './role-permission.service';

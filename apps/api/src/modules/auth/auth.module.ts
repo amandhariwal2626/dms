@@ -11,6 +11,7 @@ import { ProfileController } from './controllers/profile.controller';
 import { InvitationController } from './controllers/invitation.controller';
 import { RoleController } from './controllers/role.controller';
 import { PermissionController } from './controllers/permission.controller';
+import { RolePermissionController } from './controllers/role-permission.controller';
 import { AuthService } from './services/auth.service';
 import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
@@ -20,6 +21,7 @@ import { ProfileService } from './services/profile.service';
 import { InvitationService } from './services/invitation.service';
 import { RoleService } from './services/role.service';
 import { PermissionService } from './services/permission.service';
+import { RolePermissionService } from './services/role-permission.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { HashService } from './services/hash.service';
 import { SessionTokenService } from './services/session-token.service';
@@ -54,6 +56,7 @@ import { AuthListener } from './listeners/auth.listener';
     InvitationController,
     RoleController,
     PermissionController,
+    RolePermissionController,
   ],
   providers: [
     AuthService,
@@ -65,6 +68,7 @@ import { AuthListener } from './listeners/auth.listener';
     InvitationService,
     RoleService,
     PermissionService,
+    RolePermissionService,
     EmailVerificationService,
     HashService,
     SessionTokenService,

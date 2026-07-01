@@ -4,3 +4,4 @@ export * from './profile.dto';
 export * from './invitation.dto';
 export * from './role.dto';
 export * from './permission.dto';
+export * from './role-permission.dto';
