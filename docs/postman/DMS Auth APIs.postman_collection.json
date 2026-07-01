@@ -687,6 +687,199 @@
           "body": "{\n  \"success\": true,\n  \"message\": \"Preferences updated successfully\"\n}"
         }
       ]
+    },
+    {
+      "name": "Invitations",
+      "item": [
+        {
+          "name": "Create Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"firstName\": \"New\",\n  \"lastName\": \"User\",\n  \"designation\": \"Developer\",\n  \"department\": \"SALES\",\n  \"roleIds\": [\"role-uuid-here\"],\n  \"message\": \"Welcome to the team!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/invitations",
+              "host": ["{{base_url}}"],
+              "path": ["users", "invitations"]
+            },
+            "description": "Create a new user invitation. If the user already exists, creates CompanyUser (INVITED) + UserRole (source: INVITATION) records. Publishes UserInvitationCreatedEvent."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Invitation sent successfully\",\n  \"data\": {\n    \"invitationId\": \"uuid\",\n    \"email\": \"newuser@example.com\",\n    \"isNewUser\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Invitations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/invitations",
+              "host": ["{{base_url}}"],
+              "path": ["users", "invitations"]
+            },
+            "description": "List all active invitations for the current user's company."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"status\": \"PENDING\",\n      \"expiresAt\": \"2025-01-08T00:00:00.000Z\",\n      \"resendCount\": 0,\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Invitation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/invitations/:id",
+              "host": ["{{base_url}}"],
+              "path": ["users", "invitations", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "invitation-uuid-here"
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific invitation."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid\",\n    \"email\": \"user@example.com\",\n    \"status\": \"PENDING\",\n    \"token\": \"token-value\",\n    \"expiresAt\": \"2025-01-08T00:00:00.000Z\",\n    \"resendCount\": 0,\n    \"metadata\": {},\n    \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Accept Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/invitations/:token/accept",
+              "host": ["{{base_url}}"],
+              "path": ["users", "invitations", ":token", "accept"],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": "invitation-token-here"
+                }
+              ]
+            },
+            "description": "Accept an invitation using the invitation token. Creates CompanyUser (ACTIVE) + UserRole records. If the user does not exist, creates a new user account (forcePasswordChange: true). Publishes UserInvitationAcceptedEvent."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Invitation accepted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resend Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/invitations/:id/resend",
+              "host": ["{{base_url}}"],
+              "path": ["users", "invitations", ":id", "resend"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "invitation-uuid-here"
+                }
+              ]
+            },
+            "description": "Resend an invitation with a new token. Max 5 resends allowed. Publishes UserInvitationCreatedEvent."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Invitation resent successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel Invitation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/invitations/:id",
+              "host": ["{{base_url}}"],
+              "path": ["users", "invitations", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "invitation-uuid-here"
+                }
+              ]
+            },
+            "description": "Cancel a pending invitation. Cannot cancel already accepted invitations. Publishes UserInvitationCancelledEvent."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Invitation cancelled successfully\"\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

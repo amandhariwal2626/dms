@@ -75,4 +75,7 @@ export const EVENT_NAMES = {
   PROFILE_UPDATED: 'user.profile.updated',
   PROFILE_PHOTO_UPLOADED: 'user.profile.photo_uploaded',
   PREFERENCES_UPDATED: 'user.preferences.updated',
+  USER_INVITATION_CREATED: 'user.invitation.created',
+  USER_INVITATION_ACCEPTED: 'user.invitation.accepted',
+  USER_INVITATION_CANCELLED: 'user.invitation.cancelled',
 } as const;
