@@ -480,6 +480,213 @@
           "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid or expired OTP\",\n  \"code\": \"INVALID_OTP\"\n}"
         }
       ]
+    },
+    {
+      "name": "Get Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users/profile",
+          "host": ["{{base_url}}"],
+          "path": ["users", "profile"]
+        },
+        "description": "Returns the complete profile of the authenticated user.\n\nIncludes:\n- User info (name, email, mobile, gender, DOB, etc.)\n- Active company details\n- Company membership info\n- Roles\n- Current session info\n\nRequires `Authorization: Bearer <access_token>` header.\n\nThe `access_token` collection variable is auto-populated after login."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"id\": \"uuid\",\n  \"firstName\": \"John\",\n  \"middleName\": null,\n  \"lastName\": \"Doe\",\n  \"displayName\": \"John Doe\",\n  \"username\": \"john\",\n  \"email\": \"john@acme.com\",\n  \"mobileNumber\": \"+919876543210\",\n  \"alternateMobileNumber\": null,\n  \"profilePhotoUrl\": null,\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"1990-01-01T00:00:00.000Z\",\n  \"bloodGroup\": \"O+\",\n  \"maritalStatus\": \"SINGLE\",\n  \"nationality\": \"Indian\",\n  \"preferredLanguage\": \"EN\",\n  \"timezone\": \"ASIA_KOLKATA\",\n  \"emailVerified\": true,\n  \"mobileVerified\": true,\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"activeCompany\": {\n    \"companyId\": \"uuid\",\n    \"companyCode\": \"CMP000001\",\n    \"legalName\": \"Acme Corp\",\n    \"displayName\": \"Acme Corp Pvt Ltd\",\n    \"logoUrl\": null\n  },\n  \"companyMembership\": {\n    \"companyUserId\": \"uuid\",\n    \"employeeCode\": \"EMP000001\",\n    \"designation\": \"Manager\",\n    \"department\": \"SALES\",\n    \"joiningDate\": \"2024-01-01T00:00:00.000Z\",\n    \"employmentStatus\": \"ACTIVE\",\n    \"workLocation\": \"Mumbai\"\n  },\n  \"roles\": [\n    {\n      \"roleId\": \"uuid\",\n      \"name\": \"Admin\",\n      \"code\": \"COMPANY_ADMIN\"\n    }\n  ],\n  \"currentSession\": {\n    \"sessionId\": \"uuid\",\n    \"loginAt\": \"2024-01-01T10:00:00.000Z\",\n    \"lastActivityAt\": \"2024-01-01T12:00:00.000Z\",\n    \"deviceName\": \"iPhone 15\",\n    \"browser\": \"Safari\",\n    \"operatingSystem\": \"iOS 18\"\n  }\n}"
+        },
+        {
+          "name": "Unauthorized",
+          "status": "Unauthorized",
+          "code": 401,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Jane\",\n  \"middleName\": \"Marie\",\n  \"lastName\": \"Smith\",\n  \"displayName\": \"Jane Smith\",\n  \"mobileNumber\": \"+919876543211\",\n  \"alternateMobileNumber\": \"+919876543212\",\n  \"gender\": \"FEMALE\",\n  \"dateOfBirth\": \"1992-06-15\",\n  \"bloodGroup\": \"A+\",\n  \"maritalStatus\": \"MARRIED\",\n  \"nationality\": \"Indian\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/users/profile",
+          "host": ["{{base_url}}"],
+          "path": ["users", "profile"]
+        },
+        "description": "Update the authenticated user's profile.\n\nOnly personal info fields can be updated:\n- firstName, middleName, lastName, displayName\n- mobileNumber, alternateMobileNumber\n- gender, dateOfBirth, bloodGroup, maritalStatus, nationality\n\nEmail, username, and security fields cannot be updated via this endpoint."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\"\n}"
+        },
+        {
+          "name": "Validation Error",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Validation failed\",\n  \"code\": \"VALIDATION_FAILED\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Change Password",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"currentPassword\": \"OldPass1!\",\n  \"newPassword\": \"NewStrongPass1!\",\n  \"confirmPassword\": \"NewStrongPass1!\",\n  \"logoutOtherDevices\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/users/change-password",
+          "host": ["{{base_url}}"],
+          "path": ["users", "change-password"]
+        },
+        "description": "Change the authenticated user's password.\n\nFlow:\n1. Validates current password\n2. Validates password strength and confirmation\n3. Hashes new password with bcrypt\n4. In a Prisma transaction: updates password hash, increments refreshTokenVersion\n5. If `logoutOtherDevices=true`: revokes all sessions except current\n6. Publishes `PasswordChangedEvent`\n7. Creates ActivityLog entry\n\nAfter a successful password change, all existing JWTs are invalidated (refreshTokenVersion incremented)."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Password changed successfully\"\n}"
+        },
+        {
+          "name": "Invalid Current Password",
+          "status": "Unauthorized",
+          "code": 401,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid email or password\",\n  \"code\": \"INVALID_CREDENTIALS\"\n}"
+        },
+        {
+          "name": "Weak Password",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Password does not meet strength requirements\",\n  \"errors\": [\"Password must contain at least one uppercase letter\"],\n  \"code\": \"WEAK_PASSWORD\"\n}"
+        },
+        {
+          "name": "Password Mismatch",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Passwords do not match\",\n  \"code\": \"PASSWORD_MISMATCH\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Upload Profile Photo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Profile photo (JPG, JPEG, PNG, WEBP, max 5 MB)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/users/profile-photo",
+          "host": ["{{base_url}}"],
+          "path": ["users", "profile-photo"]
+        },
+        "description": "Upload a profile photo for the authenticated user.\n\nAccepted formats: JPG, JPEG, PNG, WEBP\nMaximum size: 5 MB\n\nFlow:\n- Validates file type and size\n- Stores file locally in `uploads/profiles/`\n- Creates a `FileAttachment` record with `fileCategory: USER_PROFILE`\n- Updates `User.profilePhotoUrl`\n- Publishes `ProfilePhotoUploadedEvent`\n- Creates ActivityLog entry"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Profile photo uploaded successfully\",\n  \"data\": {\n    \"fileId\": \"uuid\",\n    \"fileName\": \"photo.jpg\",\n    \"fileUrl\": \"/uploads/profiles/uuid.jpg\",\n    \"fileSize\": 1048576,\n    \"mimeType\": \"image/jpeg\"\n  }\n}"
+        },
+        {
+          "name": "Invalid File Type",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid file type. Only JPG, JPEG, PNG, and WEBP are supported\",\n  \"code\": \"INVALID_FILE\"\n}"
+        },
+        {
+          "name": "File Too Large",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"File too large. Maximum size is 5 MB\",\n  \"code\": \"FILE_TOO_LARGE\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Preferences",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"preferredLanguage\": \"HI\",\n  \"timezone\": \"ASIA_DUBAI\",\n  \"dateFormat\": \"DD/MM/YYYY\",\n  \"timeFormat\": \"24h\",\n  \"theme\": \"dark\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/users/preferences",
+          "host": ["{{base_url}}"],
+          "path": ["users", "preferences"]
+        },
+        "description": "Update the authenticated user's preferences.\n\n- `preferredLanguage` and `timezone` are stored as direct User model fields\n- `dateFormat`, `timeFormat`, and `theme` are stored in the User's `metadata` JSON field\n\nPublishes `PreferencesUpdatedEvent` and creates ActivityLog entry."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Preferences updated successfully\"\n}"
+        }
+      ]
     }
   ]
 }

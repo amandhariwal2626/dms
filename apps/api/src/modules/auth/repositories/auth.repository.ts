@@ -466,4 +466,68 @@ export class AuthRepository {
       },
     });
   }
+
+  revokeOtherSessions(userId: string, excludeSessionId: string) {
+    return this.prisma.session.updateMany({
+      where: {
+        userId,
+        id: { not: excludeSessionId },
+        isRevoked: false,
+        status: 'ACTIVE',
+        isDeleted: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revocationReason: 'PASSWORD_CHANGED_OTHER_DEVICES',
+        status: 'REVOKED',
+      },
+    });
+  }
+
+  // ─── Profile ───────────────────────────────────────
+
+  findUserWithProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        companyUsers: {
+          where: { isDeleted: false, status: 'ACTIVE' },
+          include: {
+            company: true,
+            userRoles: {
+              include: {
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  updateUser(userId: string, data: Prisma.UserUpdateInput) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { ...data, updatedAt: new Date() },
+    });
+  }
+
+  findCurrentSession(sessionId: string) {
+    return this.prisma.session.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        loginAt: true,
+        lastActivityAt: true,
+        deviceName: true,
+        browser: true,
+        operatingSystem: true,
+      },
+    });
+  }
+
+  createFileAttachment(data: Prisma.FileAttachmentCreateInput) {
+    return this.prisma.fileAttachment.create({ data });
+  }
 }

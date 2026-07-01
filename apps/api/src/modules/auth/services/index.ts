@@ -7,3 +7,4 @@ export * from './hash.service';
 export * from './session-token.service';
 export * from './jwt-config.service';
 export * from './password-reset.service';
+export * from './profile.service';
