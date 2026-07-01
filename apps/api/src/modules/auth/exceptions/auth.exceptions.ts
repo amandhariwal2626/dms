@@ -163,3 +163,15 @@ export class ValidationFailedException extends HttpException {
     super({ status: 'error', message, code: 'VALIDATION_FAILED' }, HttpStatus.BAD_REQUEST);
   }
 }
+
+export class InvalidFileException extends HttpException {
+  constructor(message = 'Invalid file type. Only JPG, JPEG, PNG, and WEBP are supported') {
+    super({ status: 'error', message, code: 'INVALID_FILE' }, HttpStatus.BAD_REQUEST);
+  }
+}
+
+export class FileTooLargeException extends HttpException {
+  constructor(message = 'File too large. Maximum size is 5 MB') {
+    super({ status: 'error', message, code: 'FILE_TOO_LARGE' }, HttpStatus.BAD_REQUEST);
+  }
+}

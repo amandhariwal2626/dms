@@ -72,4 +72,7 @@ export const EVENT_NAMES = {
   COMPANY_SWITCHED: 'auth.company.switched',
   TOKEN_REFRESHED: 'auth.token.refreshed',
   SESSION_REVOKED: 'auth.session.revoked',
+  PROFILE_UPDATED: 'user.profile.updated',
+  PROFILE_PHOTO_UPLOADED: 'user.profile.photo_uploaded',
+  PREFERENCES_UPDATED: 'user.preferences.updated',
 } as const;
