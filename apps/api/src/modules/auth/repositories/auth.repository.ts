@@ -771,4 +771,93 @@ export class AuthRepository {
       },
     });
   }
+
+  // ─── Permission Management ────────────────────────
+
+  findPermissions(params: {
+    where: Prisma.PermissionWhereInput;
+    skip: number;
+    take: number;
+    orderBy: Prisma.PermissionOrderByWithRelationInput;
+  }) {
+    return this.prisma.permission.findMany(params);
+  }
+
+  countPermissions(where: Prisma.PermissionWhereInput) {
+    return this.prisma.permission.count({ where });
+  }
+
+  findPermissionById(id: string) {
+    return this.prisma.permission.findFirst({
+      where: { id, isDeleted: false },
+    });
+  }
+
+  findPermissionByCode(code: string, excludeId?: string) {
+    return this.prisma.permission.findFirst({
+      where: {
+        code,
+        isDeleted: false,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+  }
+
+  findPermissionByName(name: string, excludeId?: string) {
+    return this.prisma.permission.findFirst({
+      where: {
+        name,
+        isDeleted: false,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+  }
+
+  findModuleById(id: string) {
+    return this.prisma.module.findFirst({
+      where: { id, isDeleted: false },
+    });
+  }
+
+  createPermission(data: Prisma.PermissionCreateInput) {
+    return this.prisma.permission.create({ data });
+  }
+
+  updatePermission(id: string, data: Prisma.PermissionUpdateInput) {
+    return this.prisma.permission.update({
+      where: { id },
+      data,
+    });
+  }
+
+  softDeletePermission(id: string, deletedBy: string) {
+    return this.prisma.permission.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+        isActive: false,
+      },
+    });
+  }
+
+  countPermissionRoleAssignments(permissionId: string) {
+    return this.prisma.rolePermission.count({
+      where: {
+        permissionId,
+        isDeleted: false,
+      },
+    });
+  }
+
+  findPermissionsByModule(module: string) {
+    return this.prisma.permission.findMany({
+      where: {
+        module,
+        isDeleted: false,
+      },
+      orderBy: [{ feature: 'asc' }, { displayOrder: 'asc' }],
+    });
+  }
 }

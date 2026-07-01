@@ -3,3 +3,4 @@ export * from './password-reset.dto';
 export * from './profile.dto';
 export * from './invitation.dto';
 export * from './role.dto';
+export * from './permission.dto';
