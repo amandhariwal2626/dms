@@ -103,8 +103,8 @@ export class AuthorizationService {
     this.permissionCacheService.invalidate(previousCompanyId, userId);
   }
 
-  onLogout(userId: string): void {
-    this.permissionCacheService.invalidateByUser(userId);
+  onLogout(): void {
+    this.permissionCacheService.invalidateByUser();
   }
 
   private async getOrResolvePermissionSet(

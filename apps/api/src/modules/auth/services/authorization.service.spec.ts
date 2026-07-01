@@ -405,7 +405,7 @@ describe('AuthorizationService', () => {
         cachedAt: new Date().toISOString(),
       });
 
-      service.onLogout('user-1');
+      service.onLogout();
 
       expect(cacheService.getAuthorizationData('company-1', 'user-1')).toBeUndefined();
     });

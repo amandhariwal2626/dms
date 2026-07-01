@@ -137,7 +137,7 @@ describe('PermissionCacheService', () => {
   it('should invalidate by user across all companies', () => {
     cacheProvider.set('authz:company-1:user-1', mockData);
     cacheProvider.set('authz:company-2:user-1', mockData);
-    service.invalidateByUser('user-1');
+    service.invalidateByUser();
     cacheProvider.clear();
     expect(cacheProvider.get('authz:company-1:user-1')).toBeUndefined();
     expect(cacheProvider.get('authz:company-2:user-1')).toBeUndefined();
