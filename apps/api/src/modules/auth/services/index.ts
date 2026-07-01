@@ -6,3 +6,4 @@ export * from './email-verification.service';
 export * from './hash.service';
 export * from './session-token.service';
 export * from './jwt-config.service';
+export * from './password-reset.service';

@@ -65,6 +65,7 @@ export const EVENT_NAMES = {
   USER_LOGGED_IN: 'auth.user.logged_in',
   USER_LOGGED_OUT: 'auth.user.logged_out',
   PASSWORD_RESET_REQUESTED: 'auth.password.reset_requested',
+  PASSWORD_RESET_VERIFIED: 'auth.password.reset_verified',
   PASSWORD_CHANGED: 'auth.password.changed',
   EMAIL_VERIFIED: 'auth.email.verified',
   COMPANY_SELECTED: 'auth.company.selected',

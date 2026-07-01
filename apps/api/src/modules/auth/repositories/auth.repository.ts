@@ -395,4 +395,75 @@ export class AuthRepository {
       },
     });
   }
+
+  // ─── Password Reset ───────────────────────────────
+
+  findPasswordResetToken(email: string) {
+    return this.prisma.emailVerificationToken.findFirst({
+      where: {
+        email,
+        purpose: 'RESET_PASSWORD',
+        isDeleted: false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  findVerifiedPasswordResetToken(email: string) {
+    return this.prisma.emailVerificationToken.findFirst({
+      where: {
+        email,
+        purpose: 'RESET_PASSWORD',
+        status: 'VERIFIED',
+        isUsed: false,
+        isDeleted: false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  updateUserPassword(
+    userId: string,
+    data: {
+      passwordHash: string;
+      passwordChangedAt: Date;
+      passwordResetRequired?: boolean;
+      forcePasswordChange?: boolean;
+      refreshTokenVersion?: number;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: data.passwordHash,
+        passwordChangedAt: data.passwordChangedAt,
+        ...(data.passwordResetRequired !== undefined
+          ? { passwordResetRequired: data.passwordResetRequired }
+          : {}),
+        ...(data.forcePasswordChange !== undefined
+          ? { forcePasswordChange: data.forcePasswordChange }
+          : {}),
+        ...(data.refreshTokenVersion !== undefined
+          ? { refreshTokenVersion: data.refreshTokenVersion }
+          : {}),
+      },
+    });
+  }
+
+  revokeAllUserSessions(userId: string) {
+    return this.prisma.session.updateMany({
+      where: {
+        userId,
+        isRevoked: false,
+        status: 'ACTIVE',
+        isDeleted: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revocationReason: 'PASSWORD_CHANGED',
+        status: 'REVOKED',
+      },
+    });
+  }
 }
