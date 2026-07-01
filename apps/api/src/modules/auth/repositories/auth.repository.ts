@@ -50,9 +50,14 @@ export class AuthRepository {
     return this.prisma.companyUser.create({ data });
   }
 
-  findRoleByCode(companyId: string, code: string) {
-    return this.prisma.role.findUnique({
-      where: { companyId_code: { companyId, code } },
+  findRoleByCode(companyId: string, code: string, excludeId?: string) {
+    return this.prisma.role.findFirst({
+      where: {
+        companyId,
+        code,
+        isDeleted: false,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
     });
   }
 
@@ -626,6 +631,143 @@ export class AuthRepository {
         companyId,
         userId,
         isDeleted: false,
+      },
+    });
+  }
+
+  // ─── Role Management ────────────────────────────
+
+  findRoles(params: {
+    where: Prisma.RoleWhereInput;
+    skip: number;
+    take: number;
+    orderBy: Prisma.RoleOrderByWithRelationInput;
+  }) {
+    return this.prisma.role.findMany(params);
+  }
+
+  countRoles(where: Prisma.RoleWhereInput) {
+    return this.prisma.role.count({ where });
+  }
+
+  findRoleWithDetails(id: string) {
+    return this.prisma.role.findFirst({
+      where: { id, isDeleted: false },
+      include: {
+        parentRole: {
+          select: { id: true, name: true, code: true, displayName: true },
+        },
+        childRoles: {
+          where: { isDeleted: false },
+          select: { id: true },
+        },
+        _count: {
+          select: {
+            userRoles: {
+              where: { isDeleted: false },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  findRoleByName(companyId: string, name: string, excludeId?: string) {
+    return this.prisma.role.findFirst({
+      where: {
+        companyId,
+        name,
+        isDeleted: false,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+  }
+
+  updateRole(id: string, data: Prisma.RoleUpdateInput) {
+    return this.prisma.role.update({
+      where: { id },
+      data,
+    });
+  }
+
+  softDeleteRole(id: string, deletedBy: string) {
+    return this.prisma.role.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy,
+        isActive: false,
+      },
+    });
+  }
+
+  countActiveRoleUsers(roleId: string) {
+    return this.prisma.userRole.count({
+      where: {
+        roleId,
+        isDeleted: false,
+        isActive: true,
+        companyUser: {
+          isDeleted: false,
+          isActive: true,
+        },
+      },
+    });
+  }
+
+  findRoleWithActiveUsers(roleId: string) {
+    return this.prisma.role.findFirst({
+      where: { id: roleId, isDeleted: false },
+      include: {
+        _count: {
+          select: {
+            userRoles: {
+              where: { isDeleted: false, isActive: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  findAdminRoleByCompany(companyId: string) {
+    return this.prisma.role.findFirst({
+      where: {
+        companyId,
+        code: 'COMPANY_ADMIN',
+        isDeleted: false,
+      },
+    });
+  }
+
+  countActiveAdminRoles(companyId: string, excludeRoleId: string) {
+    return this.prisma.role.count({
+      where: {
+        companyId,
+        code: 'COMPANY_ADMIN',
+        isDeleted: false,
+        isActive: true,
+        status: 'ACTIVE',
+        id: { not: excludeRoleId },
+      },
+    });
+  }
+
+  findRolesForCompany(companyId: string) {
+    return this.prisma.role.findMany({
+      where: {
+        companyId,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        displayName: true,
+        roleType: true,
+        parentRoleId: true,
+        isSystemRole: true,
       },
     });
   }

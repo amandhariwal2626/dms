@@ -880,6 +880,237 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{base_url}}"],
+              "path": ["roles"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sortBy", "value": "createdAt" },
+                { "key": "sortOrder", "value": "desc" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "status", "value": "", "disabled": true },
+                { "key": "roleType", "value": "", "disabled": true },
+                { "key": "isSystemRole", "value": "", "disabled": true },
+                { "key": "isActive", "value": "", "disabled": true }
+              ]
+            },
+            "description": "List roles for the active company with pagination, search, sorting, and filtering."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"name\": \"Sales Manager\",\n      \"code\": \"SALES_MANAGER\",\n      \"displayName\": \"Sales Manager\",\n      \"description\": \"Manages sales operations\",\n      \"roleType\": \"CUSTOM\",\n      \"parentRoleId\": null,\n      \"isSystemRole\": false,\n      \"isEditable\": true,\n      \"isDeletable\": true,\n      \"status\": \"ACTIVE\",\n      \"isActive\": true,\n      \"hierarchyLevel\": 2,\n      \"priority\": 10,\n      \"userCount\": 0,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00.000Z\",\n      \"createdBy\": \"user-uuid\",\n      \"updatedBy\": \"user-uuid\"\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"page\": 1,\n    \"limit\": 10,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Role",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/:id",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":id"],
+              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+            },
+            "description": "Get complete details of a specific role."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"uuid\",\n    \"companyId\": \"company-uuid\",\n    \"name\": \"Sales Manager\",\n    \"code\": \"SALES_MANAGER\",\n    \"displayName\": \"Sales Manager\",\n    \"description\": \"Manages sales operations\",\n    \"roleType\": \"CUSTOM\",\n    \"parentRoleId\": null,\n    \"parentRole\": null,\n    \"childRolesCount\": 2,\n    \"isSystemRole\": false,\n    \"isEditable\": true,\n    \"isDeletable\": true,\n    \"isAssignable\": true,\n    \"defaultLandingPage\": \"/dashboard\",\n    \"defaultModule\": \"SALES\",\n    \"status\": \"ACTIVE\",\n    \"isActive\": true,\n    \"userCount\": 5,\n    \"hierarchyLevel\": 2,\n    \"priority\": 10,\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00.000Z\",\n    \"createdBy\": \"user-uuid\",\n    \"updatedBy\": \"user-uuid\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Role\",\n  \"code\": \"NEW_ROLE\",\n  \"displayName\": \"New Role Display\",\n  \"description\": \"A new custom role\",\n  \"parentRoleId\": \"optional-parent-uuid\",\n  \"defaultLandingPage\": \"/dashboard\",\n  \"defaultModule\": \"SALES\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles",
+              "host": ["{{base_url}}"],
+              "path": ["roles"]
+            },
+            "description": "Create a new custom role. Name and code must be unique within the company."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role created successfully\",\n  \"data\": {\n    \"id\": \"new-role-uuid\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Updated Display Name\",\n  \"description\": \"Updated description\",\n  \"parentRoleId\": \"optional-parent-uuid\",\n  \"defaultLandingPage\": \"/new-dashboard\",\n  \"defaultModule\": \"SALES\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/:id",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":id"],
+              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+            },
+            "description": "Update a role's display name, description, parent role, landing page, and module."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Role Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":id", "status"],
+              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+            },
+            "description": "Change role status: ACTIVE, INACTIVE, or ARCHIVED."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role activated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Clone Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/:id/clone",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":id", "clone"],
+              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+            },
+            "description": "Clone a role. Creates a copy with 'Copy' appended to the name. Does not clone users or permissions."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role cloned successfully\",\n  \"data\": {\n    \"id\": \"cloned-role-uuid\",\n    \"name\": \"Sales Manager Copy\",\n    \"code\": \"SALES_MANAGER_COPY\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/:id",
+              "host": ["{{base_url}}"],
+              "path": ["roles", ":id"],
+              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+            },
+            "description": "Soft delete a role. Cannot delete system roles, roles with active users, or the Company Admin role."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

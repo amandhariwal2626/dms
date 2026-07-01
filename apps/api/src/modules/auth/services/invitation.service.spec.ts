@@ -246,12 +246,12 @@ describe('InvitationService', () => {
       authRepository.findRolesByIds.mockResolvedValue(mockRoles);
       authRepository.createVerificationToken.mockResolvedValue(mockInvitation);
       authRepository.getNextEmployeeCode.mockResolvedValue('EMP000002');
+      const mockTx = {
+        companyUser: { create: jest.fn().mockResolvedValue({ id: 'cu-new-id' }) },
+        userRole: { create: jest.fn().mockResolvedValue({}) },
+      } as never;
       authRepository.$transaction.mockImplementation(
-        (fn: (tx: never) => Promise<unknown>) =>
-          fn({
-            companyUser: { create: jest.fn().mockResolvedValue({ id: 'cu-new-id' }) },
-            userRole: { create: jest.fn().mockResolvedValue({}) },
-          }) as never,
+        (fn: (tx: never) => Promise<unknown>) => fn(mockTx) as never,
       );
       authRepository.createActivityLog.mockResolvedValue({} as never);
 
@@ -330,14 +330,14 @@ describe('InvitationService', () => {
       authRepository.createUser.mockResolvedValue(
         Object.assign({}, mockUser, { id: 'new-user-id' }),
       );
+      const txMock1 = {
+        companyUser: { create: jest.fn().mockResolvedValue({ id: 'cu-new-id' }) },
+        role: { findUnique: jest.fn().mockResolvedValue(mockRole) },
+        userRole: { create: jest.fn().mockResolvedValue({}) },
+        emailVerificationToken: { update: jest.fn().mockResolvedValue({}) },
+      } as never;
       authRepository.$transaction.mockImplementation(
-        (fn: (tx: never) => Promise<unknown>) =>
-          fn({
-            companyUser: { create: jest.fn().mockResolvedValue({ id: 'cu-new-id' }) },
-            role: { findUnique: jest.fn().mockResolvedValue(mockRoles[0]) },
-            userRole: { create: jest.fn().mockResolvedValue({}) },
-            emailVerificationToken: { update: jest.fn().mockResolvedValue({}) },
-          }) as never,
+        (fn: (tx: never) => Promise<unknown>) => fn(txMock1) as never,
       );
       authRepository.createActivityLog.mockResolvedValue({} as never);
 
@@ -355,14 +355,14 @@ describe('InvitationService', () => {
       authRepository.findInvitationByToken.mockResolvedValue(mockInvitation);
       authRepository.findUserByEmail.mockResolvedValue(mockUser);
       authRepository.getNextEmployeeCode.mockResolvedValue('EMP000002');
+      const txMock2 = {
+        companyUser: { create: jest.fn().mockResolvedValue({ id: 'cu-new-id' }) },
+        role: { findUnique: jest.fn().mockResolvedValue(mockRole) },
+        userRole: { create: jest.fn().mockResolvedValue({}) },
+        emailVerificationToken: { update: jest.fn().mockResolvedValue({}) },
+      } as never;
       authRepository.$transaction.mockImplementation(
-        (fn: (tx: never) => Promise<unknown>) =>
-          fn({
-            companyUser: { create: jest.fn().mockResolvedValue({ id: 'cu-new-id' }) },
-            role: { findUnique: jest.fn().mockResolvedValue(mockRole) },
-            userRole: { create: jest.fn().mockResolvedValue({}) },
-            emailVerificationToken: { update: jest.fn().mockResolvedValue({}) },
-          }) as never,
+        (fn: (tx: never) => Promise<unknown>) => fn(txMock2) as never,
       );
       authRepository.updateUser.mockResolvedValue({} as never);
       authRepository.createActivityLog.mockResolvedValue({} as never);
