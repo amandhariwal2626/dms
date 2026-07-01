@@ -3,4 +3,7 @@ export * from './refresh-token.guard';
 export * from './permission.guard';
 export * from './role.guard';
 export * from './company.guard';
+export * from './session.guard';
+export * from './active-user.guard';
+export * from './verified-email.guard';
 export * from './public.guard';

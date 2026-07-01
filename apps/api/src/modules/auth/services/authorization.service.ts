@@ -60,6 +60,11 @@ export class AuthorizationService {
     return data.rolesResult.roleCodes.includes(roleCode);
   }
 
+  async hasAnyRole(userId: string, companyId: string, roleCodes: string[]): Promise<boolean> {
+    const data = await this.getOrResolveAll(userId, companyId);
+    return roleCodes.some((code) => data.rolesResult.roleCodes.includes(code));
+  }
+
   async getEffectivePermissions(userId: string, companyId: string): Promise<ResolvedPermission[]> {
     const permissionSet = await this.getOrResolvePermissionSet(userId, companyId);
     return permissionSet.permissions;

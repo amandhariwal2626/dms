@@ -12,6 +12,8 @@ import { InvitationController } from './controllers/invitation.controller';
 import { RoleController } from './controllers/role.controller';
 import { PermissionController } from './controllers/permission.controller';
 import { RolePermissionController } from './controllers/role-permission.controller';
+import { UserRoleController } from './controllers/user-role.controller';
+import { EffectivePermissionController } from './controllers/effective-permission.controller';
 import { AuthService } from './services/auth.service';
 import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
@@ -27,6 +29,7 @@ import { CompanyContextResolver } from './services/company-context-resolver.serv
 import { RoleResolver } from './services/role-resolver.service';
 import { PermissionResolver } from './services/permission-resolver.service';
 import { AuthorizationService } from './services/authorization.service';
+import { UserRoleService } from './services/user-role.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { HashService } from './services/hash.service';
 import { SessionTokenService } from './services/session-token.service';
@@ -62,6 +65,8 @@ import { AuthListener } from './listeners/auth.listener';
     RoleController,
     PermissionController,
     RolePermissionController,
+    UserRoleController,
+    EffectivePermissionController,
   ],
   providers: [
     AuthService,
@@ -84,6 +89,7 @@ import { AuthListener } from './listeners/auth.listener';
     RoleResolver,
     PermissionResolver,
     AuthorizationService,
+    UserRoleService,
     EmailVerificationService,
     HashService,
     SessionTokenService,

@@ -17,3 +17,4 @@ export * from './company-context-resolver.service';
 export * from './role-resolver.service';
 export * from './permission-resolver.service';
 export * from './authorization.service';
+export * from './user-role.service';

@@ -5,3 +5,5 @@ export * from './invitation.controller';
 export * from './role.controller';
 export * from './permission.controller';
 export * from './role-permission.controller';
+export * from './user-role.controller';
+export * from './effective-permission.controller';
