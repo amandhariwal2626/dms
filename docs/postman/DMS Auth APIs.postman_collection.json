@@ -293,6 +293,193 @@
           "body": "{\n  \"status\": \"error\",\n  \"message\": \"Too many attempts. Please try again later\",\n  \"code\": \"TOO_MANY_ATTEMPTS\"\n}"
         }
       ]
+    },
+    {
+      "name": "Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@acme.com\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/forgot-password",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "forgot-password"]
+        },
+        "description": "Request a password reset OTP.\n\nAlways returns the same generic success message regardless of whether the email exists (to prevent email enumeration).\n\nIf the user exists and is eligible (ACTIVE, email verified, not deleted):\n- Invalidates any previous pending reset tokens\n- Generates a cryptographically secure 6-digit OTP (SHA-256 hashed)\n- Stores it with `purpose: RESET_PASSWORD`, 10-min expiry, max 5 attempts\n- Publishes `PasswordResetRequestedEvent`\n- Creates an ActivityLog entry\n\nOTP is stored hashed — check the `email_verification_tokens` table: `SELECT * FROM email_verification_tokens WHERE purpose = 'RESET_PASSWORD' ORDER BY created_at DESC;`"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"If an account with this email exists, a reset code has been sent\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Resend Password Reset",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@acme.com\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/resend-password-reset",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "resend-password-reset"]
+        },
+        "description": "Resend a password reset OTP (max 5 resends allowed). Invalidates the previous pending OTP."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"A new reset code has been sent to your email\"\n}"
+        },
+        {
+          "name": "Too Many Resends",
+          "status": "Too Many Requests",
+          "code": 429,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Maximum resend limit reached. Please try again later\",\n  \"code\": \"TOO_MANY_RESENDS\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Verify Password Reset",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    pm.collectionVariables.set('otp', '');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@acme.com\",\n  \"otp\": \"{{otp}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/verify-password-reset",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "verify-password-reset"]
+        },
+        "description": "Verify the password reset OTP.\n\n- Validates OTP format, expiry, and attempt count\n- Uses constant-time SHA-256 comparison\n- On success: marks token as VERIFIED (required before calling reset-password)\n- Publishes `PasswordResetVerifiedEvent`\n- Creates an ActivityLog entry\n\n> **Note:** Set the `otp` collection variable manually after retrieving it from the `email_verification_tokens` table.\n> ```sql\n> SELECT * FROM email_verification_tokens WHERE email = 'john@acme.com' AND purpose = 'RESET_PASSWORD' ORDER BY created_at DESC LIMIT 1;\n> ```"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"OTP verified successfully\"\n}"
+        },
+        {
+          "name": "Invalid OTP",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid or expired OTP\",\n  \"code\": \"INVALID_OTP\"\n}"
+        },
+        {
+          "name": "OTP Expired",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"OTP has expired. Please request a new one\",\n  \"code\": \"OTP_EXPIRED\"\n}"
+        },
+        {
+          "name": "Too Many Attempts",
+          "status": "Too Many Requests",
+          "code": 429,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Too many attempts. Please try again later\",\n  \"code\": \"TOO_MANY_ATTEMPTS\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@acme.com\",\n  \"otp\": \"{{otp}}\",\n  \"newPassword\": \"NewStrongPass1!\",\n  \"confirmPassword\": \"NewStrongPass1!\",\n  \"logoutFromAllDevices\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/reset-password",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "reset-password"]
+        },
+        "description": "Reset the password using a VERIFIED OTP.\n\nPrerequisites:\n1. Call `/forgot-password` to get an OTP\n2. Call `/verify-password-reset` to mark the token as VERIFIED\n3. Call this endpoint within the 10-min expiry\n\nWhat happens inside a Prisma transaction:\n- Hashes the new password with bcrypt (12 rounds)\n- Updates user: passwordHash, passwordChangedAt, passwordResetRequired=false, forcePasswordChange=false, refreshTokenVersion++\n- Marks the token as USED\n- If `logoutFromAllDevices=true`: revokes all active sessions\n\nOn success:\n- Publishes `PasswordChangedEvent`\n- Creates an ActivityLog entry"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"message\": \"Password has been reset successfully\"\n}"
+        },
+        {
+          "name": "Weak Password",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Password does not meet strength requirements\",\n  \"errors\": [\"Password must contain at least one uppercase letter\"],\n  \"code\": \"WEAK_PASSWORD\"\n}"
+        },
+        {
+          "name": "Password Mismatch",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Passwords do not match\",\n  \"code\": \"PASSWORD_MISMATCH\"\n}"
+        },
+        {
+          "name": "Token Used",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"This token has already been used\",\n  \"code\": \"TOKEN_USED\"\n}"
+        },
+        {
+          "name": "OTP Expired",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"OTP has expired. Please request a new one\",\n  \"code\": \"OTP_EXPIRED\"\n}"
+        },
+        {
+          "name": "Invalid OTP",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid or expired OTP\",\n  \"code\": \"INVALID_OTP\"\n}"
+        }
+      ]
     }
   ]
 }

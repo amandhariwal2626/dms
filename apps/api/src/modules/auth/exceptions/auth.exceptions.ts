@@ -134,6 +134,18 @@ export class TooManyAttemptsException extends HttpException {
   }
 }
 
+export class TooManyResendsException extends HttpException {
+  constructor(message = 'Maximum resend limit reached. Please try again later') {
+    super({ status: 'error', message, code: 'TOO_MANY_RESENDS' }, HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
+
+export class TokenUsedException extends HttpException {
+  constructor(message = 'This token has already been used') {
+    super({ status: 'error', message, code: 'TOKEN_USED' }, HttpStatus.BAD_REQUEST);
+  }
+}
+
 export class ReplayAttackException extends HttpException {
   constructor(message = 'Refresh token reuse detected. Session has been revoked') {
     super({ status: 'error', message, code: 'REPLAY_ATTACK' }, HttpStatus.UNAUTHORIZED);

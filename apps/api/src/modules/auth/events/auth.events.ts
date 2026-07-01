@@ -33,6 +33,14 @@ export class PasswordResetRequestedEvent {
   ) {}
 }
 
+export class PasswordResetVerifiedEvent {
+  static readonly eventName = EVENT_NAMES.PASSWORD_RESET_VERIFIED;
+  constructor(
+    public readonly userId: string,
+    public readonly email: string,
+  ) {}
+}
+
 export class PasswordChangedEvent {
   static readonly eventName = EVENT_NAMES.PASSWORD_CHANGED;
   constructor(public readonly userId: string) {}
