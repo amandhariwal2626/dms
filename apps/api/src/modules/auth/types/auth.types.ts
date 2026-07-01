@@ -66,6 +66,7 @@ export interface DeviceInfo {
 
 export interface RequestContext {
   requestId?: string;
+  correlationId?: string;
   traceId?: string;
   ipAddress?: string;
   userAgent?: string;

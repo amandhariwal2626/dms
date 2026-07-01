@@ -65,8 +65,9 @@ export class AuthRepository {
     return this.prisma.role.create({ data });
   }
 
-  createUserRole(data: Prisma.UserRoleCreateInput) {
-    return this.prisma.userRole.create({ data });
+  createUserRole(data: Prisma.UserRoleCreateInput, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return client.userRole.create({ data });
   }
 
   createActivityLog(data: Prisma.ActivityLogCreateInput) {
@@ -952,5 +953,97 @@ export class AuthRepository {
         permission: true,
       },
     });
+  }
+
+  // ─── User Role Management ─────────────────────
+
+  findUserRoleById(id: string) {
+    return this.prisma.userRole.findUnique({
+      where: { id },
+      include: {
+        role: true,
+        companyUser: {
+          include: {
+            company: true,
+            user: true,
+          },
+        },
+      },
+    });
+  }
+
+  findUserRolesByCompanyUserId(companyUserId: string) {
+    return this.prisma.userRole.findMany({
+      where: {
+        companyUserId,
+        isDeleted: false,
+      },
+      include: {
+        role: true,
+      },
+      orderBy: [{ priority: 'asc' }],
+    });
+  }
+
+  findActiveUserRoleByCompanyUserAndRoleId(companyUserId: string, roleId: string) {
+    return this.prisma.userRole.findFirst({
+      where: {
+        companyUserId,
+        roleId,
+        isDeleted: false,
+      },
+      include: {
+        role: true,
+      },
+    });
+  }
+
+  countActiveUserRolesByCompanyUser(companyUserId: string) {
+    return this.prisma.userRole.count({
+      where: {
+        companyUserId,
+        isDeleted: false,
+        isActive: true,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  updateUserRole(id: string, data: Prisma.UserRoleUpdateInput) {
+    return this.prisma.userRole.update({
+      where: { id },
+      data,
+      include: { role: true },
+    });
+  }
+
+  softDeleteUserRole(id: string) {
+    return this.prisma.userRole.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        isActive: false,
+        status: 'INACTIVE',
+      },
+    });
+  }
+
+  setPrimaryRole(companyUserId: string, userRoleId: string) {
+    return this.prisma.$transaction([
+      this.prisma.userRole.updateMany({
+        where: {
+          companyUserId,
+          isDeleted: false,
+          isPrimaryRole: true,
+          id: { not: userRoleId },
+        },
+        data: { isPrimaryRole: false },
+      }),
+      this.prisma.userRole.update({
+        where: { id: userRoleId },
+        data: { isPrimaryRole: true },
+      }),
+    ]);
   }
 }
