@@ -899,15 +899,47 @@
               "host": ["{{base_url}}"],
               "path": ["roles"],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "10" },
-                { "key": "sortBy", "value": "createdAt" },
-                { "key": "sortOrder", "value": "desc" },
-                { "key": "search", "value": "", "disabled": true },
-                { "key": "status", "value": "", "disabled": true },
-                { "key": "roleType", "value": "", "disabled": true },
-                { "key": "isSystemRole", "value": "", "disabled": true },
-                { "key": "isActive", "value": "", "disabled": true }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "roleType",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "isSystemRole",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             },
             "description": "List roles for the active company with pagination, search, sorting, and filtering."
@@ -935,7 +967,12 @@
               "raw": "{{base_url}}/roles/:id",
               "host": ["{{base_url}}"],
               "path": ["roles", ":id"],
-              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Get complete details of a specific role."
           },
@@ -1004,7 +1041,12 @@
               "raw": "{{base_url}}/roles/:id",
               "host": ["{{base_url}}"],
               "path": ["roles", ":id"],
-              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Update a role's display name, description, parent role, landing page, and module."
           },
@@ -1039,7 +1081,12 @@
               "raw": "{{base_url}}/roles/:id/status",
               "host": ["{{base_url}}"],
               "path": ["roles", ":id", "status"],
-              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Change role status: ACTIVE, INACTIVE, or ARCHIVED."
           },
@@ -1070,7 +1117,12 @@
               "raw": "{{base_url}}/roles/:id/clone",
               "host": ["{{base_url}}"],
               "path": ["roles", ":id", "clone"],
-              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Clone a role. Creates a copy with 'Copy' appended to the name. Does not clone users or permissions."
           },
@@ -1097,7 +1149,12 @@
               "raw": "{{base_url}}/roles/:id",
               "host": ["{{base_url}}"],
               "path": ["roles", ":id"],
-              "variable": [{ "key": "id", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Soft delete a role. Cannot delete system roles, roles with active users, or the Company Admin role."
           },
@@ -1132,7 +1189,12 @@
               "raw": "{{base_url}}/roles/:roleId/permissions",
               "host": ["{{base_url}}"],
               "path": ["roles", ":roleId", "permissions"],
-              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "roleId",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Atomically replace all permissions for a role. Removes existing assignments and creates new ones. Only active, non-archived permissions can be assigned."
           },
@@ -1159,7 +1221,12 @@
               "raw": "{{base_url}}/roles/:roleId/permissions",
               "host": ["{{base_url}}"],
               "path": ["roles", ":roleId", "permissions"],
-              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "roleId",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Get all permissions for a role, grouped by module and feature. Shows assigned vs inherited permissions."
           },
@@ -1186,7 +1253,12 @@
               "raw": "{{base_url}}/roles/:roleId/permissions/effective-permissions",
               "host": ["{{base_url}}"],
               "path": ["roles", ":roleId", "permissions", "effective-permissions"],
-              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "roleId",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Get all effective permissions for a role including inherited ones. Returns a flat list of permissions with scope, effect, and inheritance info for frontend authorization."
           },
@@ -1221,7 +1293,12 @@
               "raw": "{{base_url}}/roles/:roleId/permissions/copy",
               "host": ["{{base_url}}"],
               "path": ["roles", ":roleId", "permissions", "copy"],
-              "variable": [{ "key": "roleId", "value": "target-role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "roleId",
+                  "value": "target-role-uuid-here"
+                }
+              ]
             },
             "description": "Copy all permissions from a source role to the target role. Replaces any existing permissions on the target role."
           },
@@ -1248,7 +1325,12 @@
               "raw": "{{base_url}}/roles/:roleId/permissions",
               "host": ["{{base_url}}"],
               "path": ["roles", ":roleId", "permissions"],
-              "variable": [{ "key": "roleId", "value": "role-uuid-here" }]
+              "variable": [
+                {
+                  "key": "roleId",
+                  "value": "role-uuid-here"
+                }
+              ]
             },
             "description": "Remove all permission assignments from a role. Cannot clear permissions for system roles."
           },
@@ -1281,15 +1363,47 @@
               "host": ["{{base_url}}"],
               "path": ["permissions"],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "10" },
-                { "key": "sortBy", "value": "createdAt" },
-                { "key": "sortOrder", "value": "desc" },
-                { "key": "search", "value": "", "disabled": true },
-                { "key": "module", "value": "", "disabled": true },
-                { "key": "action", "value": "", "disabled": true },
-                { "key": "permissionType", "value": "", "disabled": true },
-                { "key": "status", "value": "", "disabled": true }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "module",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "permissionType",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             },
             "description": "List all permissions with pagination, search, sorting, and filtering."
@@ -1317,7 +1431,12 @@
               "raw": "{{base_url}}/permissions/:id",
               "host": ["{{base_url}}"],
               "path": ["permissions", ":id"],
-              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "permission-uuid-here"
+                }
+              ]
             },
             "description": "Get complete details of a specific permission."
           },
@@ -1386,7 +1505,12 @@
               "raw": "{{base_url}}/permissions/:id",
               "host": ["{{base_url}}"],
               "path": ["permissions", ":id"],
-              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "permission-uuid-here"
+                }
+              ]
             },
             "description": "Update a permission's display name, description, routes, and UI metadata."
           },
@@ -1421,7 +1545,12 @@
               "raw": "{{base_url}}/permissions/:id/status",
               "host": ["{{base_url}}"],
               "path": ["permissions", ":id", "status"],
-              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "permission-uuid-here"
+                }
+              ]
             },
             "description": "Change permission status: ACTIVE, INACTIVE, or ARCHIVED."
           },
@@ -1448,7 +1577,12 @@
               "raw": "{{base_url}}/permissions/:id",
               "host": ["{{base_url}}"],
               "path": ["permissions", ":id"],
-              "variable": [{ "key": "id", "value": "permission-uuid-here" }]
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "permission-uuid-here"
+                }
+              ]
             },
             "description": "Soft delete a permission. Cannot delete system permissions or permissions assigned to roles."
           },
@@ -1475,7 +1609,12 @@
               "raw": "{{base_url}}/modules/:moduleId/permissions",
               "host": ["{{base_url}}"],
               "path": ["modules", ":moduleId", "permissions"],
-              "variable": [{ "key": "moduleId", "value": "module-uuid-here" }]
+              "variable": [
+                {
+                  "key": "moduleId",
+                  "value": "module-uuid-here"
+                }
+              ]
             },
             "description": "List all permissions belonging to a specific module."
           },
@@ -1485,6 +1624,480 @@
               "status": "OK",
               "code": 200,
               "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"name\": \"Create Product\",\n      \"code\": \"PRODUCT_CREATE\",\n      \"displayName\": \"Create Product\",\n      \"description\": \"Allows creating new products\",\n      \"action\": \"CREATE\",\n      \"permissionType\": \"ACTION\",\n      \"feature\": null,\n      \"displayOrder\": 1\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Roles",
+      "item": [
+        {
+          "name": "List User Roles - Get all roles assigned to a user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/:userId/roles",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":userId", "roles"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "userId-value"
+                }
+              ]
+            },
+            "description": "List User Roles - Get all roles assigned to a user"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Replace User Roles - Atomically replace all roles for a user",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/:userId/roles",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":userId", "roles"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "userId-value"
+                }
+              ]
+            },
+            "description": "Replace User Roles - Atomically replace all roles for a user",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleIds\": [\n    \"role-uuid-1\",\n    \"role-uuid-2\"\n  ]\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Assign Roles - Assign one or more roles to a user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/:userId/roles/assign",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":userId", "roles", "assign"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "userId-value"
+                }
+              ]
+            },
+            "description": "Assign Roles - Assign one or more roles to a user",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleIds\": [\n    \"role-uuid-1\"\n  ],\n  \"assignmentReason\": \"Assigning roles\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Remove User Role - Remove a specific role assignment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/:userId/roles/:roleId",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":userId", "roles", ":roleId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "userId-value"
+                },
+                {
+                  "key": "roleId",
+                  "value": "roleId-value"
+                }
+              ]
+            },
+            "description": "Remove User Role - Remove a specific role assignment"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Update User Role Status - Activate/deactivate a role assignment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/:userId/roles/:roleId/status",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":userId", "roles", ":roleId", "status"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "userId-value"
+                },
+                {
+                  "key": "roleId",
+                  "value": "roleId-value"
+                }
+              ]
+            },
+            "description": "Update User Role Status - Activate/deactivate a role assignment",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Update User Role - Update priority, primary flag, or effective dates",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/:userId/roles/:roleId",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":userId", "roles", ":roleId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "userId-value"
+                },
+                {
+                  "key": "roleId",
+                  "value": "roleId-value"
+                }
+              ]
+            },
+            "description": "Update User Role - Update priority, primary flag, or effective dates",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": 5,\n  \"isPrimaryRole\": true\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Get Profile Roles - Get roles for the current authenticated user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/profile/roles",
+              "host": ["{{base_url}}"],
+              "path": ["users", "profile", "roles"]
+            },
+            "description": "Get Profile Roles - Get roles for the current authenticated user"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authorization",
+      "item": [
+        {
+          "name": "Get Effective Permissions - All permissions for frontend UI control",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/effective-permissions",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "effective-permissions"]
+            },
+            "description": "Get Effective Permissions - All permissions for frontend UI control"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Get Effective Roles - All roles with hierarchy details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/effective-roles",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "effective-roles"]
+            },
+            "description": "Get Effective Roles - All roles with hierarchy details"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Companies",
+      "item": [
+        {
+          "name": "Get User Companies - List companies the user has access to",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/companies",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "companies"]
+            },
+            "description": "Get User Companies - List companies the user has access to"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Select Company - Select a company to work in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/companies/select",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "companies", "select"]
+            },
+            "description": "Select Company - Select a company to work in",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"company-uuid\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Switch Company - Switch to a different company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/companies/switch",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "companies", "switch"]
+            },
+            "description": "Switch Company - Switch to a different company",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"target-company-uuid\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Session",
+      "item": [
+        {
+          "name": "Refresh Token - Refresh access token using refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Refresh Token - Refresh access token using refresh token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
+            }
+          ]
+        },
+        {
+          "name": "Logout - Invalidate current session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout - Invalidate current session"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200
             }
           ]
         }

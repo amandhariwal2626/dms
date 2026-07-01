@@ -181,7 +181,14 @@ export class UserRoleService {
 
     this.logger.log(`Roles assigned to user ${userId}`);
 
-    const firstRole = roles[0] as NonNullable<(typeof roles)[0]>;
+    const firstRole = roles[0];
+    if (!firstRole) {
+      return {
+        success: true,
+        message: `Roles assigned successfully`,
+      };
+    }
+
     return {
       success: true,
       message: `Roles assigned successfully`,
